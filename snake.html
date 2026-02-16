@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake</title>
+</head>
+<body dir="ltr">
+    <style>
+        body{
+            background-color:black;
+            color: green;
+            font-family: monospace;
+        }
+        .gameTile{
+            margin:2px;
+            width: 30px;
+            height: 30px;
+        }
+        .gameRow{
+            display: flex;
+            flex-direction: row;
+            width: fit-content;
+        }
+        #gameContainer{
+            border:3px solid green;
+            max-width: 50%;
+            margin-top:50px;
+        }
+        #gameContainer{
+            display: flex;
+            flex-direction: column;
+            border:3px solid green;
+            width: 100%;
+            border-radius: 3px;
+        }
+        .banner{
+            min-width: 25%;
+            margin:50px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .optionContainer{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        p{
+            text-align: center;
+            white-space: pre;
+            margin: 2px 0;
+        }
+        button{
+            background-color: transparent;
+            color: green;
+            padding: 10px 20px;
+            margin: 0 3px;
+            border: 1px solid green;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 85px;
+        }
+        button:active{
+            background-color: rgb(55, 83, 55) !important;
+        }
+        button:hover{
+            background-color: rgb(18, 27, 18);
+        }
+        button.selected{
+            background-color: rgb(18, 27, 18);
+        }
+        .snake{
+            background-color: green;
+        }
+        .food:not(.snake){
+            background-color: red;
+            border-radius: 50%;
+        }
+        .gameMessage{
+            position:absolute;
+            transform: translate(-50%, -50%);
+            top:50%;
+            left: 50%;
+            font-weight: bolder;
+            font-size: 400%;
+            text-align: center;
+            background-color: rgb(0, 0, 0, 60%);
+        }
+        #gameOver{
+            color: red;
+        }
+        #gamePause{
+            color: green;
+        }
+    </style>
+    <div style="display: flex; flex-direction: row;" >
+        <div id="leftBanner" class="banner">
+            <span style="white-space: pre;">
+  /$$$$$$$ /$$$$$$$   /$$$$$$  /$$   /$$  /$$$$$$ 
+ /$$_____/| $$__  $$ |____  $$| $$  /$$/ /$$__  $$
+|  $$$$$$ | $$  \ $$  /$$$$$$$| $$$$$$/ | $$$$$$$$
+ \____  $$| $$  | $$ /$$__  $$| $$_  $$ | $$_____/
+ /$$$$$$$/| $$  | $$|  $$$$$$$| $$ \  $$|  $$$$$$$
+|_______/ |__/  |__/ \_______/|__/  \__/ \_______/
+            </span>
+            <p>welcome to snake</p>
+            <p>a small fun interactive game</p>
+            <p>where there is only one rule</p>
+            <b style="font-size: 120%;">don't die</b>
+            <p>(and space to start\restart)</p>
+            <p>(aaaand p to pause\unpause)</p>
+            <br/>
+            <p>have fun</p>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <div style="display: flex;">
+                <p>score: </p>
+                <p id="score">0</p>
+            </div>
+        </div>
+        <div id="gameContainer" style="position: relative;">
+            <div id="gameOver" class="gameMessage" hidden>YOU DIED</div>
+            <div id="gamePause" class="gameMessage" hidden>RUN LIKE A BIT**</div>
+            <div id="gameBoard"></div>
+        </div>
+        <div id="rightBanner" class="banner">
+            <b style="text-decoration: underline;font-size:150% ;">game options</b>
+            <div class="optionContainer">
+                <h4>speed</h4>
+                <div style="display: flex;" option="GAME_TICK">
+                    <button value="200">baby</button>
+                    <button value="100" class="selected">man</button>
+                    <button value="50">legend</button>
+                </div>
+            </div>
+            <div class="optionContainer">
+                <h4>food amount</h4>
+                <div style="display: flex;" option="food_amount">
+                    <button value="1" class="selected">1</button>
+                    <button value="2">2</button>
+                    <button value="3">3</button>
+                </div>
+            </div>
+            <div class="optionContainer">
+                <h4>mode</h4>
+                <div style="display: flex;" option="wrap_mode">
+                    <button value="no-wrap" class="selected">no-wrap</button>
+                    <button value="wrap">wrap</button>
+                    <button value="crazy">crazy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const DEFAULT_SNAKE_SIZE = 5;
+        const INITIAL_HEAD_POSITION = { top: 8, left: 10 };
+        const DEFAULT_GRID_SIZE = { hight: 15, width: 20 };
+        const GAME_STATE = {
+            direction: null,
+            SNAKE_TILES: [],
+            active: false,
+            GAME_TICK: 100,
+            food_amount: 1,
+            wrap_mode: 'no-wrap',
+            pause: false
+        }
+        let interval
+
+        function initBoard(){
+            document.querySelector(`#gameBoard`).innerHTML = "";
+            for(let i=0; i<DEFAULT_GRID_SIZE.hight;i++){
+                let row = generateElement('div',{class:'gameRow'})
+                for(let j=0; j<DEFAULT_GRID_SIZE.width;j++)
+                    row.append(generateElement('div',{ class:'gameTile', id:`gameTile_${i}_${j}` }))
+                document.querySelector(`#gameBoard`).append(row)
+            }
+        }
+
+        function initSnake(){
+            GAME_STATE.SNAKE_TILES.length = 0
+            for(let i=0;i<DEFAULT_SNAKE_SIZE;i++){
+                if(INITIAL_HEAD_POSITION.left-i<0) return;
+                let tile = document.querySelector(`#gameTile_${INITIAL_HEAD_POSITION.top}_${INITIAL_HEAD_POSITION.left-i}`)
+                tile.classList.toggle(`snake`)
+                tile.setAttribute('snakePiece', i)
+                GAME_STATE.SNAKE_TILES.push(tile)
+            }
+        }
+
+        function startGame(){
+            GAME_STATE.active = true;
+            document.querySelector('#gameOver').style.display = 'none';
+            document.querySelector('#score').textContent = '0';
+            initBoard();
+            initSnake();
+            createFood();
+            GAME_STATE.direction = 'right'
+            clearInterval(interval);
+            interval = setInterval(moveSnake, GAME_STATE.GAME_TICK);
+        }
+        function gameOver(){
+            GAME_STATE.active = false;
+            document.querySelector('#gameOver').style.display = 'block';
+            clearInterval(interval);
+        }
+        function stopGame(){
+            GAME_STATE.active = false;
+            document.querySelector('#gameOver').style.display = 'none';
+            clearInterval(interval);
+            initBoard();
+        }
+        function togglePauseGame(){
+            GAME_STATE.pause = !GAME_STATE.pause
+            document.querySelector('#gamePause').style.display = GAME_STATE.pause? 'block' : 'none';
+            if(GAME_STATE.pause)
+                clearInterval(interval)
+            else
+                interval = setInterval(moveSnake, GAME_STATE.GAME_TICK);
+        }
+
+        function moveSnake(){
+            let [i,j] = getTileCoordinates(GAME_STATE.SNAKE_TILES[0]) 
+            switch(GAME_STATE.direction){
+                case 'right':j++;break;
+                case 'left':j--;break;
+                case 'up':i--;break;
+                case 'down':i++;break;
+            }
+            let tile = document.querySelector(`#gameTile_${i}_${j}`)
+            if((GAME_STATE.wrap_mode == 'no-wrap' && !tile) || tile?.classList?.contains('snake')) return gameOver();
+            else if (!tile) tile = recalcTile(i,j)
+            if(!tile) return gameOver();
+
+            tile.classList.toggle(`snake`)
+            tile.setAttribute('snakePiece', 0)
+            if(tile.classList.contains('food')){
+                document.querySelector('#score').textContent++ 
+                createFood();
+            } 
+            GAME_STATE.SNAKE_TILES.forEach(el => el.setAttribute('snakePiece', parseInt(el.getAttribute('snakePiece'))+1))
+            GAME_STATE.SNAKE_TILES.unshift(tile)
+            let last = GAME_STATE.SNAKE_TILES.at(-1)
+            if(last.classList.contains('food'))
+                last.classList.toggle(`food`)
+            else{
+                last.classList.toggle(`snake`)
+                last.removeAttribute('snakePiece')
+                GAME_STATE.SNAKE_TILES.pop()
+            }
+        }
+
+        function handleKeyPress(e){
+            if(e.key == ' ' && !GAME_STATE.active) return startGame()
+            if(e.key == 'p' && GAME_STATE.active) return togglePauseGame()
+            else if (e.key.includes('Arrow')) redirectSnake(e.key)
+        }
+
+        function redirectSnake(key){        
+            const directions = {
+                'ArrowDown' : 'down',
+                'ArrowUp' : 'up',
+                'ArrowRight' : 'right',
+                'ArrowLeft' : 'left',
+            }
+            let new_direction = directions[key]
+            const first = getTileCoordinates(GAME_STATE.SNAKE_TILES[0]) 
+            const second = getTileCoordinates(GAME_STATE.SNAKE_TILES[1]) 
+            if(!directions[key]
+                || (first[1] != second[1] && ['right', 'left'].includes(new_direction))
+                || (first[0] != second[0] && ['up', 'down'].includes(new_direction))
+            ) return;
+            GAME_STATE.direction = directions[key]
+        }
+
+        function generateElement(tag, args = {}){
+            let el = document.createElement(tag)
+            el.classList = args.class ?? ''
+            el.id = args.id ?? ''
+            return el
+        }
+
+        function createFood(){
+            let foodOnScreen = document.querySelectorAll(`.food:not(.snake)`).length
+            for(let i=0; i<GAME_STATE.food_amount - foodOnScreen; i++){
+                let nonSnakeTiles = document.querySelectorAll(`.gameTile:not(.snake):not(.food)`)
+                nonSnakeTiles[Math.floor(Math.random()*nonSnakeTiles.length)].classList.add('food')
+            }        
+        }
+
+        function getTileCoordinates(tile){
+            return tile.id.split('_').filter((_,i,arr) => i >= arr.length-2)
+        }
+
+        function changeGameState(e){
+            let el = e.target
+            GAME_STATE[el.closest('[option]').getAttribute('option')] = el.getAttribute('value')
+            el.parentElement.querySelector(".selected").classList.toggle('selected')
+            el.classList.toggle('selected')
+            stopGame()
+            el.blur()
+        }
+
+        function recalcTile(i, j){
+            if(GAME_STATE.wrap_mode == 'crazy'){
+                if(i<0) [i,j] = [Math.floor(DEFAULT_GRID_SIZE.hight*(DEFAULT_GRID_SIZE.width-j)/DEFAULT_GRID_SIZE.width),DEFAULT_GRID_SIZE.width - 1]
+                if(i>=DEFAULT_GRID_SIZE.hight) [i,j] = [Math.floor(DEFAULT_GRID_SIZE.hight*(DEFAULT_GRID_SIZE.width-j)/DEFAULT_GRID_SIZE.width),0]
+                if(j<0) [i,j] = [DEFAULT_GRID_SIZE.hight-1,Math.floor(DEFAULT_GRID_SIZE.width*(DEFAULT_GRID_SIZE.hight-i)/DEFAULT_GRID_SIZE.hight)]
+                if(j>=DEFAULT_GRID_SIZE.width) [i,j] = [0,Math.floor(DEFAULT_GRID_SIZE.width*(DEFAULT_GRID_SIZE.hight-i)/DEFAULT_GRID_SIZE.hight)]
+                const directionMap = {
+                    'right' : 'down',
+                    'left' : 'up',
+                    'up' : 'left',
+                    'down' : 'right',
+                }
+                GAME_STATE.direction = directionMap[GAME_STATE.direction]
+            } else{
+                if(i<0) i = DEFAULT_GRID_SIZE.hight - 1
+                if(i>=DEFAULT_GRID_SIZE.hight) i = 0
+                if(j<0) j = DEFAULT_GRID_SIZE.width - 1
+                if(j>=DEFAULT_GRID_SIZE.width) j = 0
+            }
+            return document.querySelector(`#gameTile_${i}_${j}`);
+        }
+
+        initBoard();
+        document.addEventListener('keydown', handleKeyPress)
+        document.querySelectorAll('#rightBanner button').forEach(el => el.addEventListener('click', changeGameState)) 
+    </script>
+</body>
+</html>
