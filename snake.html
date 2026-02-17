@@ -23,15 +23,16 @@
             width: fit-content;
         }
         #gameContainer{
-            border:3px solid green;
-            max-width: 50%;
             margin-top:50px;
+            width:100%;
+            display: flex;
+            justify-content: center;
         }
-        #gameContainer{
+        #gameBoard{
             display: flex;
             flex-direction: column;
             border:3px solid green;
-            width: 100%;
+            width: fit-content;
             border-radius: 3px;
         }
         .banner{
@@ -330,4 +331,5 @@
         document.querySelectorAll('#rightBanner button').forEach(el => el.addEventListener('click', changeGameState)) 
     </script>
 </body>
+
 </html>
