@@ -255,7 +255,7 @@
 
         function handleKeyPress(e){
             if(e.key == ' ' && !GAME_STATE.active) return startGame()
-            if(e.key == 'p' && GAME_STATE.active) return togglePauseGame()
+            if(e.code == 'KeyP' && GAME_STATE.active) return togglePauseGame()
             else if (e.key.includes('Arrow')) redirectSnake(e.key)
         }
 
@@ -269,7 +269,7 @@
             let new_direction = directions[key]
             const first = getTileCoordinates(GAME_STATE.SNAKE_TILES[0]) 
             const second = getTileCoordinates(GAME_STATE.SNAKE_TILES[1]) 
-            if(!directions[key]
+            if(!new_direction
                 || (first[1] != second[1] && ['right', 'left'].includes(new_direction))
                 || (first[0] != second[0] && ['up', 'down'].includes(new_direction))
             ) return;
@@ -333,3 +333,4 @@
 </body>
 
 </html>
+
