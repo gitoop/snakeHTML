@@ -90,9 +90,11 @@
         }
         #gameOver{
             color: red;
+            display: none;
         }
         #gamePause{
             color: green;
+            display: none;
         }
     </style>
     <div style="display: flex; flex-direction: row;" >
@@ -123,8 +125,8 @@
             </div>
         </div>
         <div id="gameContainer" style="position: relative;">
-            <div id="gameOver" class="gameMessage" hidden>YOU DIED</div>
-            <div id="gamePause" class="gameMessage" hidden>RUN LIKE A BIT**</div>
+            <div id="gameOver" class="gameMessage">YOU DIED</div>
+            <div id="gamePause" class="gameMessage">RUN LIKE A BIT**</div>
             <div id="gameBoard"></div>
         </div>
         <div id="rightBanner" class="banner">
@@ -158,81 +160,96 @@
     <script>
         const DEFAULT_SNAKE_SIZE = 5;
         const INITIAL_HEAD_POSITION = { top: 8, left: 10 };
-        const DEFAULT_GRID_SIZE = { hight: 15, width: 20 };
+        const DEFAULT_GRID_SIZE = { height: 15, width: 20 };
+        const DIRECTIONS ={
+            RIGHT:"ArrowRight",
+            LEFT:"ArrowLeft",
+            UP: "ArrowUp",
+            DOWN:"ArrowDown"
+        }
         const GAME_STATE = {
             direction: null,
-            SNAKE_TILES: [],
+            SNAKE_COORDS: [],
+            BOARD_TILES:[],
             active: false,
             GAME_TICK: 100,
             food_amount: 1,
             wrap_mode: 'no-wrap',
-            pause: false
+            pause: false,
+            last_step: 0,
         }
-        let interval
 
         function initBoard(){
-            document.querySelector(`#gameBoard`).innerHTML = "";
-            for(let i=0; i<DEFAULT_GRID_SIZE.hight;i++){
-                let row = generateElement('div',{class:'gameRow'})
-                for(let j=0; j<DEFAULT_GRID_SIZE.width;j++)
-                    row.append(generateElement('div',{ class:'gameTile', id:`gameTile_${i}_${j}` }))
-                document.querySelector(`#gameBoard`).append(row)
+            const board = document.querySelector(`#gameBoard`);
+            board.innerHTML = "";
+            GAME_STATE.BOARD_TILES = []
+            for(let i=0; i<DEFAULT_GRID_SIZE.height;i++){
+                let row = generateElement('div',{class:'gameRow'});
+                GAME_STATE.BOARD_TILES[i] = []
+                for(let j=0; j<DEFAULT_GRID_SIZE.width;j++){
+                    let tile = generateElement('div',{ class:'gameTile', id:`gameTile_${i}_${j}` })
+                    GAME_STATE.BOARD_TILES[i][j] = tile
+                    row.append(tile)
+                }
+                board.append(row)
             }
         }
 
         function initSnake(){
-            GAME_STATE.SNAKE_TILES.length = 0
+            GAME_STATE.SNAKE_COORDS.length = 0
             for(let i=0;i<DEFAULT_SNAKE_SIZE;i++){
                 if(INITIAL_HEAD_POSITION.left-i<0) return;
-                let tile = document.querySelector(`#gameTile_${INITIAL_HEAD_POSITION.top}_${INITIAL_HEAD_POSITION.left-i}`)
+                let tile = GAME_STATE.BOARD_TILES[INITIAL_HEAD_POSITION.top][INITIAL_HEAD_POSITION.left-i]
                 tile.classList.toggle(`snake`)
                 tile.setAttribute('snakePiece', i)
-                GAME_STATE.SNAKE_TILES.push(tile)
+                GAME_STATE.SNAKE_COORDS.push([INITIAL_HEAD_POSITION.top, INITIAL_HEAD_POSITION.left-i])
             }
         }
 
         function startGame(){
-            GAME_STATE.active = true;
             document.querySelector('#gameOver').style.display = 'none';
             document.querySelector('#score').textContent = '0';
             initBoard();
             initSnake();
             createFood();
-            GAME_STATE.direction = 'right'
-            clearInterval(interval);
-            interval = setInterval(moveSnake, GAME_STATE.GAME_TICK);
+            GAME_STATE.direction = DIRECTIONS.RIGHT
+            GAME_STATE.active = true;
+            requestAnimationFrame(gameClock);
         }
         function gameOver(){
             GAME_STATE.active = false;
             document.querySelector('#gameOver').style.display = 'block';
-            clearInterval(interval);
         }
         function stopGame(){
             GAME_STATE.active = false;
             document.querySelector('#gameOver').style.display = 'none';
-            clearInterval(interval);
             initBoard();
         }
         function togglePauseGame(){
             GAME_STATE.pause = !GAME_STATE.pause
             document.querySelector('#gamePause').style.display = GAME_STATE.pause? 'block' : 'none';
-            if(GAME_STATE.pause)
-                clearInterval(interval)
-            else
-                interval = setInterval(moveSnake, GAME_STATE.GAME_TICK);
+            if(!GAME_STATE.pause) requestAnimationFrame(gameClock);
+        }
+        function gameClock(timestamp){
+            if(!GAME_STATE.active || GAME_STATE.pause) return;
+            if(timestamp - GAME_STATE.last_step > GAME_STATE.GAME_TICK){
+                GAME_STATE.last_step = timestamp;
+                moveSnake();
+            }
+            requestAnimationFrame(gameClock)
         }
 
         function moveSnake(){
-            let [i,j] = getTileCoordinates(GAME_STATE.SNAKE_TILES[0]) 
+            let [i,j] = GAME_STATE.SNAKE_COORDS[0]
             switch(GAME_STATE.direction){
-                case 'right':j++;break;
-                case 'left':j--;break;
-                case 'up':i--;break;
-                case 'down':i++;break;
+                case DIRECTIONS.RIGHT:j++;break;
+                case DIRECTIONS.LEFT:j--;break;
+                case DIRECTIONS.UP:i--;break;
+                case DIRECTIONS.DOWN:i++;break;
             }
-            let tile = document.querySelector(`#gameTile_${i}_${j}`)
+            let tile = GAME_STATE.BOARD_TILES[i]?.[j]
             if((GAME_STATE.wrap_mode == 'no-wrap' && !tile) || tile?.classList?.contains('snake')) return gameOver();
-            else if (!tile) tile = recalcTile(i,j)
+            else if (!tile) [i, j, tile] = recalcTileAndCoords(i,j)
             if(!tile) return gameOver();
 
             tile.classList.toggle(`snake`)
@@ -241,15 +258,19 @@
                 document.querySelector('#score').textContent++ 
                 createFood();
             } 
-            GAME_STATE.SNAKE_TILES.forEach(el => el.setAttribute('snakePiece', parseInt(el.getAttribute('snakePiece'))+1))
-            GAME_STATE.SNAKE_TILES.unshift(tile)
-            let last = GAME_STATE.SNAKE_TILES.at(-1)
+            GAME_STATE.SNAKE_COORDS.forEach(coords => {
+                const tile = GAME_STATE.BOARD_TILES[coords[0]][coords[1]]
+                tile?.setAttribute('snakePiece', parseInt(tile.getAttribute('snakePiece'))+1)
+            })
+            GAME_STATE.SNAKE_COORDS.unshift([i,j])
+            let last_coords = GAME_STATE.SNAKE_COORDS.at(-1)
+            let last = GAME_STATE.BOARD_TILES[last_coords[0]][last_coords[1]]
             if(last.classList.contains('food'))
                 last.classList.toggle(`food`)
             else{
                 last.classList.toggle(`snake`)
                 last.removeAttribute('snakePiece')
-                GAME_STATE.SNAKE_TILES.pop()
+                GAME_STATE.SNAKE_COORDS.pop()
             }
         }
 
@@ -260,20 +281,13 @@
         }
 
         function redirectSnake(key){        
-            const directions = {
-                'ArrowDown' : 'down',
-                'ArrowUp' : 'up',
-                'ArrowRight' : 'right',
-                'ArrowLeft' : 'left',
-            }
-            let new_direction = directions[key]
-            const first = getTileCoordinates(GAME_STATE.SNAKE_TILES[0]) 
-            const second = getTileCoordinates(GAME_STATE.SNAKE_TILES[1]) 
-            if(!new_direction
-                || (first[1] != second[1] && ['right', 'left'].includes(new_direction))
-                || (first[0] != second[0] && ['up', 'down'].includes(new_direction))
+            const first = GAME_STATE.SNAKE_COORDS[0]
+            const second = GAME_STATE.SNAKE_COORDS[1]
+            if(!Object.values(DIRECTIONS).includes(key)
+                || (first[1] != second[1] && [DIRECTIONS.RIGHT, DIRECTIONS.LEFT].includes(key))
+                || (first[0] != second[0] && [DIRECTIONS.UP, DIRECTIONS.DOWN].includes(key))
             ) return;
-            GAME_STATE.direction = directions[key]
+            GAME_STATE.direction = key
         }
 
         function generateElement(tag, args = {}){
@@ -291,10 +305,6 @@
             }        
         }
 
-        function getTileCoordinates(tile){
-            return tile.id.split('_').filter((_,i,arr) => i >= arr.length-2)
-        }
-
         function changeGameState(e){
             let el = e.target
             GAME_STATE[el.closest('[option]').getAttribute('option')] = el.getAttribute('value')
@@ -304,26 +314,25 @@
             el.blur()
         }
 
-        function recalcTile(i, j){
+        function recalcTileAndCoords(i, j){
             if(GAME_STATE.wrap_mode == 'crazy'){
-                if(i<0) [i,j] = [Math.floor(DEFAULT_GRID_SIZE.hight*(DEFAULT_GRID_SIZE.width-j)/DEFAULT_GRID_SIZE.width),DEFAULT_GRID_SIZE.width - 1]
-                if(i>=DEFAULT_GRID_SIZE.hight) [i,j] = [Math.floor(DEFAULT_GRID_SIZE.hight*(DEFAULT_GRID_SIZE.width-j)/DEFAULT_GRID_SIZE.width),0]
-                if(j<0) [i,j] = [DEFAULT_GRID_SIZE.hight-1,Math.floor(DEFAULT_GRID_SIZE.width*(DEFAULT_GRID_SIZE.hight-i)/DEFAULT_GRID_SIZE.hight)]
-                if(j>=DEFAULT_GRID_SIZE.width) [i,j] = [0,Math.floor(DEFAULT_GRID_SIZE.width*(DEFAULT_GRID_SIZE.hight-i)/DEFAULT_GRID_SIZE.hight)]
-                const directionMap = {
-                    'right' : 'down',
-                    'left' : 'up',
-                    'up' : 'left',
-                    'down' : 'right',
-                }
+                if(i<0) [i,j] = [Math.floor(DEFAULT_GRID_SIZE.height*(DEFAULT_GRID_SIZE.width-j)/DEFAULT_GRID_SIZE.width),DEFAULT_GRID_SIZE.width - 1]
+                if(i>=DEFAULT_GRID_SIZE.height) [i,j] = [Math.floor(DEFAULT_GRID_SIZE.height*(DEFAULT_GRID_SIZE.width-j)/DEFAULT_GRID_SIZE.width),0]
+                if(j<0) [i,j] = [DEFAULT_GRID_SIZE.height-1,Math.floor(DEFAULT_GRID_SIZE.width*(DEFAULT_GRID_SIZE.height-i)/DEFAULT_GRID_SIZE.height)]
+                if(j>=DEFAULT_GRID_SIZE.width) [i,j] = [0,Math.floor(DEFAULT_GRID_SIZE.width*(DEFAULT_GRID_SIZE.height-i)/DEFAULT_GRID_SIZE.height)]
+                const directionMap = {}
+                directionMap[DIRECTIONS.RIGHT] = DIRECTIONS.DOWN;
+                directionMap[DIRECTIONS.LEFT] = DIRECTIONS.UP;
+                directionMap[DIRECTIONS.UP] = DIRECTIONS.LEFT;
+                directionMap[DIRECTIONS.DOWN] = DIRECTIONS.RIGHT;
                 GAME_STATE.direction = directionMap[GAME_STATE.direction]
             } else{
-                if(i<0) i = DEFAULT_GRID_SIZE.hight - 1
-                if(i>=DEFAULT_GRID_SIZE.hight) i = 0
+                if(i<0) i = DEFAULT_GRID_SIZE.height - 1
+                if(i>=DEFAULT_GRID_SIZE.height) i = 0
                 if(j<0) j = DEFAULT_GRID_SIZE.width - 1
                 if(j>=DEFAULT_GRID_SIZE.width) j = 0
             }
-            return document.querySelector(`#gameTile_${i}_${j}`);
+            return [i, j, GAME_STATE.BOARD_TILES[i][j]] 
         }
 
         initBoard();
