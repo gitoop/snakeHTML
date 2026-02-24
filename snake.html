@@ -292,7 +292,7 @@
 
         function generateElement(tag, args = {}){
             let el = document.createElement(tag)
-            el.classList = args.class ?? ''
+            el.className = args.class ?? ''
             el.id = args.id ?? ''
             return el
         }
