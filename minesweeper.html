@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://kit.fontawesome.com/a566466632.js" crossorigin="anonymous"></script>
+    <title>minesweeper</title>
+</head>
+<body>
+    <style>
+        :root{
+            --hidden-gray:#444d53;
+            --shown-gray:#333a41;
+            --text-red:##bb0402;
+            --number-1:#0000FF;
+            --number-2:#008000;
+            --number-3:#FF0000;
+            --number-4:#000080;
+            --number-5:#800000;
+            --number-6:#008080;
+            --number-7:black;
+            --number-8:#808080;
+            --border-top:#C0C0C0;
+            --border-bottom:#808080;
+            --border:#22282f;
+            --smiley-yellow:yellow;
+        }
+        body{
+            background-color:black;
+            color: var(--text-red);
+            font-family: monospace;
+        }
+        p{
+            text-align: center;
+            white-space: pre;
+            margin: 2px 0;
+        }
+        #gameContainer{
+            margin-top:50px;
+            width:100%;
+            display: flex;
+            justify-content: center;
+        }
+        #gameContainer > div{
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            width: fit-content;
+        }
+        #boardHeader{
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--shown-gray);
+            border: 5px solid var(--border-top);
+            width: calc(100% - 30px);
+            padding: 5px 10px
+        }
+        #smiley{
+            color:var(--smiley-yellow);
+            height: 30px !important;
+            width: 30px !important;
+            font-size: larger;
+        }
+        #gameBoard{
+            display: flex;
+            flex-direction: column;
+            width: fit-content;
+            border-radius: 3px;
+        }
+        .optionContainer{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        button{
+            background-color: transparent;
+            color: white;
+            padding: 10px 20px;
+            margin: 0 3px;
+            border: 1px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 85px;
+        }
+        button:active{
+            background-color: rgb(86, 94, 86) !important;
+        }
+        button:hover{
+            background-color: rgb(176, 200, 176);
+        }
+        button.selected{
+            background-color: rgb(167, 229, 167);
+        }
+        .banner{
+            min-width: 35%;
+            margin:50px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .row{
+            display: flex;
+            flex-direction: row;
+            width: fit-content;
+        }
+        .tile {
+            width: 24px;
+            height: 24px;
+            background: var(--shown-gray);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tile:not(:has(.fa-solid)):not(.fa-solid){
+            font-weight: bold;
+            font-size: x-large;
+        }
+        .tile-inner, #smiley {
+            height: 20px;
+            width: 20px;
+            border-top: 2px solid var(--border-top);
+            border-left: 2px solid var(--border-top);
+            border-bottom: 2px solid black;
+            border-right: 2px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tile-inner:not(.fa-solid):active, #smiley:active{
+            border-top: 2px solid black;
+            border-left: 2px solid black;
+            border-bottom: 2px solid var(--border-top);
+            border-right: 2px solid var(--border-top);
+        }
+        .fa-solid.fa-flag{
+            color:var(--number-3)
+        }
+        .fa-solid.fa-question{
+            color:var(--number-6)
+        }
+        .fa-solid.fa-land-mine-on{
+            color:black
+        }
+        #gameOver{
+            color: red;
+            display: none;
+        }
+        .redText{
+            color: red;
+            width: 34px;
+            text-align: right;
+            font-size: x-large;
+            padding: 0 2px;
+            font-weight: bold;
+            border-top: 2px solid var(--border-top);
+            border-left: 2px solid var(--border-top);
+            border-bottom: 2px solid black;
+            border-right: 2px solid black;
+        }
+    </style>
+    <div style="display: flex; flex-direction: row;" >
+        <div id="leftBanner" class="banner">
+            <span style="white-space: pre;"> /$$$$$$/$$$$  /$$ /$$$$$$$   /$$$$$$ 
+| $$_  $$_  $$| $$| $$__  $$ /$$__  $$
+| $$ \ $$ \ $$| $$| $$  \ $$| $$$$$$$$
+| $$ | $$ | $$| $$| $$  | $$| $$_____/
+| $$ | $$ | $$| $$| $$  | $$|  $$$$$$$
+|__/ |__/ |__/|__/|__/  |__/ \_______/</span>
+            <span style="white-space: pre;">  /$$$$$$$ /$$  /$$  /$$  /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$   /$$$$$$ 
+ /$$_____/| $$ | $$ | $$ /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$ /$$__  $$
+|  $$$$$$ | $$ | $$ | $$| $$$$$$$$| $$$$$$$$| $$  \ $$| $$$$$$$$| $$  \__/
+ \____  $$| $$ | $$ | $$| $$_____/| $$_____/| $$  | $$| $$_____/| $$      
+ /$$$$$$$/|  $$$$$/$$$$/|  $$$$$$$|  $$$$$$$| $$$$$$$/|  $$$$$$$| $$      
+|_______/  \_____/\___/  \_______/ \_______/| $$____/  \_______/|__/      
+                                            | $$                          
+                                            | $$                          
+                                            |__/                          
+            </span>
+            <p>welcome to minesweeper</p>
+            <p>a small fun interactive game</p>
+            <p>where there is only one rule</p>
+            <b style="font-size: 120%;">don't die</b>
+            <br/>
+            <p>have fun</p>
+
+            <div class="optionContainer">
+                <h4>size</h4>
+                <div style="display: flex;" option="size">
+                    <button value="1" class="selected">small</button>
+                    <button value="2">medium</button>
+                    <button value="3">large</button>
+                </div>
+            </div>
+        </div>
+        <div id="gameContainer" style="position: relative;">
+            <div>
+                <div id="gameOver" class="gameMessage">YOU DIED</div>
+                <div id="boardHeader">
+                    <div id="minesLeft" class="redText"><span>10</span></div>
+                    <div id="smiley" class="fa-solid fa-face-smile" onclick="startGame()"></div>
+                    <div id="gameTime" class="redText"><span>0</span></div>
+                </div>
+                <div id="gameBoard"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const DIRECTIONS ={
+            RIGHT:"ArrowRight",
+            LEFT:"ArrowLeft",
+            UP: "ArrowUp",
+            DOWN:"ArrowDown"
+        }
+        const GAME_STATE = {
+            mines:[],
+            MINES_AMOUNT : 10,
+            GRID_SIZE: {
+                height: 9,
+                width: 9
+            },
+            BOARD_TILES: [],
+            flags: 0,
+            active: false,
+            last_step: 0,
+            GAME_TICK: 1000
+        }
+
+        function gameClock(timestamp){
+            if(!GAME_STATE.active) return;
+            if(timestamp - GAME_STATE.last_step > GAME_STATE.GAME_TICK){
+                GAME_STATE.last_step = timestamp;
+                let time = document.querySelector('#gameTime span').innerText
+                if(time < 999)
+                    document.querySelector('#gameTime span').innerText++
+            }
+            requestAnimationFrame(gameClock)
+        }
+
+        function startGame(){
+            initBoard();
+            generateMines();
+            setTileValues();
+            document.querySelector(`#gameBoard`).addEventListener('mouseup', pressTile)
+            document.querySelector(`#gameBoard`).addEventListener('contextmenu', e => e.preventDefault())
+            GAME_STATE.active = true;
+            GAME_STATE.flags = 0;
+            document.querySelector('#minesLeft span').innerText = GAME_STATE.MINES_AMOUNT
+            document.querySelector('#gameTime span').innerText = 0
+            document.querySelector('#smiley').classList = 'fa-solid fa-face-smile'
+            requestAnimationFrame(gameClock)
+        }
+        function gameLost(el){
+            GAME_STATE.active = false;
+            el = el.closest('.tile-inner') || el.querySelector('.tile-inner')
+            el.style.display = 'none'
+            el = el.parentElement;
+            el.classList.toggle('fa-solid')
+            el.classList.toggle('fa-land-mine-on')
+            el.style.backgroundColor = 'red'
+            document.querySelector('#smiley').classList.toggle('fa-face-smile')
+            document.querySelector('#smiley').classList.toggle('fa-face-laugh-squint')
+        }
+        function initBoard(){
+            const board = document.querySelector(`#gameBoard`);
+            board.innerHTML = "";
+            GAME_STATE.BOARD_TILES = []
+            for(let i=0; i<GAME_STATE.GRID_SIZE.height;i++){
+                let row = generateElement('div',{class:'row'});
+                GAME_STATE.BOARD_TILES[i] = []
+                for(let j=0; j<GAME_STATE.GRID_SIZE.width;j++){
+                    let tile = generateElement('div',{ class:'tile', id:`gameTile_${i}_${j}` })
+                    tile.append(generateElement('div',{ class:'tile-inner' }))
+                    GAME_STATE.BOARD_TILES[i][j] = tile
+                    row.append(tile)
+                }
+                board.append(row)
+            }
+        }
+        function generateMines(){
+            GAME_STATE.mines = []
+            let boardArr = GAME_STATE.BOARD_TILES.flat()
+            for(let i = 0; i < GAME_STATE.MINES_AMOUNT; i++){
+                let mine = boardArr.splice(Math.floor(Math.random()*boardArr.length),1)[0]
+                mine.value = 'mine'
+                GAME_STATE.mines.push(mine) 
+            }
+        }
+        function setTileValues(){
+            for(let i = 0; i < GAME_STATE.BOARD_TILES.length; i++)
+                for(let j = 0; j < GAME_STATE.BOARD_TILES[i].length; j++){
+                    if(GAME_STATE.BOARD_TILES[i][j].value == 'mine') continue;
+                    let amount = countSurroundingMines(i,j)
+                    if (amount > 0)
+                        GAME_STATE.BOARD_TILES[i][j].value = amount
+                }
+        }
+        function countSurroundingMines(i,j){
+            let amount = 0
+            for(let iDelta = -1; iDelta <= 1; iDelta++)
+                for(let jDelta = -1; jDelta <= 1; jDelta++)
+                    if(i + iDelta >= 0 && j + jDelta >= 0
+                        && GAME_STATE.BOARD_TILES[i + iDelta]?.[j + jDelta]?.value =='mine')
+                        amount++
+            return amount
+        }
+        function countSurroundingFlags(i,j){
+            let amount = 0
+            for(let iDelta = -1; iDelta <= 1; iDelta++)
+                for(let jDelta = -1; jDelta <= 1; jDelta++)
+                    if(i + iDelta >= 0 && j + jDelta >= 0
+                        && GAME_STATE.BOARD_TILES[i + iDelta]?.[j + jDelta]?.querySelector('.fa-flag'))
+                        amount++
+            return amount
+        }
+        function generateElement(tag, args = {}){
+            let el = document.createElement(tag)
+            el.classList = args.class ?? ''
+            el.id = args.id ?? ''
+            return el
+        }
+
+        function pressTile(e){
+            if(!GAME_STATE.active) return;
+            const el = e.target
+            if(e.button == 2) return setTileMode(e)
+            if(el.classList.contains('tile') && e.button == 1) checkRevaelSurrounding(el)
+            else{
+                if(!el.classList.contains('tile-inner') || el.classList.contains('fa-solid')) return;
+                if(el.parentElement.value == 'mine') return gameLost(el);
+                revealBoard(el.parentElement)           
+            }
+            let visibleTiles = Array.from(document.querySelectorAll('.tile-inner')).filter(el => el.style.display !== 'none').length;
+            if(visibleTiles != GAME_STATE.MINES_AMOUNT) return;
+            document.querySelector('#smiley').classList.toggle('fa-face-smile')
+            document.querySelector('#smiley').classList.toggle('fa-face-grin-hearts')
+            GAME_STATE.active = false;
+        }
+        function setTileMode(e){
+            if(!GAME_STATE.active) return;
+            e.preventDefault();
+            const el = e.target
+            if(!el.classList.contains('tile-inner')) return;
+            el.blur();
+            if(!el.classList.contains('fa-solid')){
+                el.classList.toggle('fa-solid')
+                el.classList.toggle('fa-flag')
+                GAME_STATE.flags++
+            }
+            else if(el.classList.contains('fa-flag')){
+                el.classList.toggle('fa-flag')
+                el.classList.toggle('fa-question')
+                GAME_STATE.flags--
+            }
+            else if(el.classList.contains('fa-question')){
+                el.classList.toggle('fa-solid')
+                el.classList.toggle('fa-question')
+            }
+            document.querySelector('#minesLeft span').innerText = GAME_STATE.MINES_AMOUNT - GAME_STATE.flags
+        }
+        function revealBoard(tile, revealMines = false){
+            let TI = tile.querySelector('.tile-inner')
+            let fa = tile.querySelector('.fa-solid')
+            if((!revealMines && tile.value == 'mine') || fa || !TI || TI.style.display == 'none' || !GAME_STATE.active) return;
+            if(revealMines && tile.value == 'mine') return gameLost(tile);
+            TI.style.display = 'none'
+            if(tile.value){
+                tile.innerText = tile.value
+                tile.style.color = `var(--number-${tile.value})`
+                return
+            }
+            revealSurrounding(tile)
+        }
+        function checkRevaelSurrounding(tile){
+            if(!tile.innerText) return;
+            let [i,j] = tile.id.split('_').slice(-2).map(Number);
+            let flags = countSurroundingFlags(i,j)
+            if(flags != tile.innerText) return;
+            revealSurrounding(tile, true)
+        }
+        function revealSurrounding(tile, revealMines = false){
+            let [i,j] = tile.id.split('_').slice(-2).map(Number);
+            if(GAME_STATE.BOARD_TILES[i-1]?.[j]) revealBoard(GAME_STATE.BOARD_TILES[i-1][j], revealMines)
+            if(GAME_STATE.BOARD_TILES[i+1]?.[j]) revealBoard(GAME_STATE.BOARD_TILES[i+1][j], revealMines)
+            if(GAME_STATE.BOARD_TILES[i]?.[j-1]) revealBoard(GAME_STATE.BOARD_TILES[i][j-1], revealMines)
+            if(GAME_STATE.BOARD_TILES[i]?.[j+1]) revealBoard(GAME_STATE.BOARD_TILES[i][j+1], revealMines)
+            if(GAME_STATE.BOARD_TILES[i+1]?.[j+1]) revealBoard(GAME_STATE.BOARD_TILES[i+1][j+1], revealMines)
+            if(GAME_STATE.BOARD_TILES[i+1]?.[j-1]) revealBoard(GAME_STATE.BOARD_TILES[i+1][j-1], revealMines)
+            if(GAME_STATE.BOARD_TILES[i-1]?.[j+1]) revealBoard(GAME_STATE.BOARD_TILES[i-1][j+1], revealMines)
+            if(GAME_STATE.BOARD_TILES[i-1]?.[j-1]) revealBoard(GAME_STATE.BOARD_TILES[i-1][j-1], revealMines)
+        }
+
+        function changeGameState(e){
+            let el = e.target
+            const v = el.getAttribute('value')
+            GAME_STATE.GRID_SIZE.height = v == 1 ? 9 : v == 2 ? 16 : 16
+            GAME_STATE.GRID_SIZE.width = v == 1 ? 9 : v == 2 ? 16 : 30
+            GAME_STATE.MINES_AMOUNT = v == 1 ? 10 : v == 2 ? 40 : 99
+            el.parentElement.querySelector(".selected").classList.toggle('selected')
+            el.classList.toggle('selected')
+            startGame()
+            el.blur()
+        }
+
+        startGame()
+        document.querySelectorAll('.optionContainer button').forEach(el => el.addEventListener('click', changeGameState)) 
+    </script>
+</body>
+</html>
