@@ -264,10 +264,8 @@
             GAME_STATE.flags = 0;
             elements.mineCount.innerText = GAME_STATE.MINES_AMOUNT
             elements.time.innerText = 0
-            if(isFA){
-                elements.smiley.className = 'fa-solid fa-face-smile'
-            }
-            else elements.smiley.innerText = ':D'
+            elements.smiley.className = 'fa-solid fa-face-smile'
+            if(!isFA) elements.smiley.innerText = ':D'
             requestAnimationFrame(gameClock)
         }
         function gameLost(){
@@ -275,11 +273,9 @@
             GAME_STATE.FLAT_BOARD.filter(tileObj => tileObj.value == 'mine').forEach(tileObj =>{
                 if(tileObj.symbol == 1) return;
                 tileObj.tile.querySelector('.tile-inner').remove()
-                if(isFA){
-                    tileObj.tile.classList.toggle('fa-solid')
-                    tileObj.tile.classList.toggle('fa-land-mine-on')
-                }
-                else tileObj.tile.innerText = 'B'
+                tileObj.tile.classList.toggle('fa-solid')
+                tileObj.tile.classList.toggle('fa-land-mine-on')
+                if(!isFA) tileObj.tile.innerText = 'B'
                 tileObj.tile.style.backgroundColor = 'red'
             })
             GAME_STATE.FLAT_BOARD.filter(tileObj => tileObj.value != 'mine' && tileObj.symbol == 1).forEach(tileObj => {
@@ -287,11 +283,9 @@
                 span.innerText = 'X'
                 tileObj.tile.append(span)
             })
-            if(isFA){
-                elements.smiley.classList.toggle('fa-face-smile')
-                elements.smiley.classList.toggle('fa-face-laugh-squint')
-            }
-            else elements.smiley.innerText = 'XD'
+            elements.smiley.classList.toggle('fa-face-smile')
+            elements.smiley.classList.toggle('fa-face-laugh-squint')
+            if(!isFA) elements.smiley.innerText = 'XD'
 
         }
         function initBoard(){
@@ -367,11 +361,9 @@
             }
             let nonVisibleTiles = GAME_STATE.FLAT_BOARD.filter(tileObj => !tileObj.visible).length;
             if(nonVisibleTiles != GAME_STATE.MINES_AMOUNT) return;
-            if(isFA){
-                elements.smiley.classList.toggle('fa-face-smile')
-                elements.smiley.classList.toggle('fa-face-grin-hearts')
-            }
-            else elements.smiley.innerText = '<3'
+            elements.smiley.classList.toggle('fa-face-smile')
+            elements.smiley.classList.toggle('fa-face-grin-hearts')
+            if(!isFA) elements.smiley.innerText = '<3'
             GAME_STATE.active = false;
         }
         function setTileMode(i, j){
@@ -380,29 +372,23 @@
             const tileInner = tileObj.tile.querySelector('.tile-inner')
             if(tileObj.visible) return;
             if(tileObj.symbol == 0){
-                if(isFA){
-                    tileInner.classList.toggle('fa-solid')
-                    tileInner.classList.toggle('fa-flag')
-                }
-                else tileInner.innerText = 'F'
+                tileInner.classList.toggle('fa-solid')
+                tileInner.classList.toggle('fa-flag')
+                if(!isFA) tileInner.innerText = 'F'
                 GAME_STATE.flags++
                 tileObj.symbol = 1
             }
             else if(tileObj.symbol == 1){
-                if(isFA){
-                    tileInner.classList.toggle('fa-flag')
-                    tileInner.classList.toggle('fa-question')
-                }
-                else tileInner.innerText = '?'
+                tileInner.classList.toggle('fa-flag')
+                tileInner.classList.toggle('fa-question')
+                if(!isFA) tileInner.innerText = '?'
                 GAME_STATE.flags--
                 tileObj.symbol = 2
             }
             else if(tileObj.symbol == 2){
-                if(isFA){
-                    tileInner.classList.toggle('fa-solid')
-                    tileInner.classList.toggle('fa-question')
-                }
-                else tileInner.innerText = ''
+                tileInner.classList.toggle('fa-solid')
+                tileInner.classList.toggle('fa-question')
+                if(!isFA) tileInner.innerText = ''
                 tileObj.symbol = 0
             }
             elements.mineCount.innerText = GAME_STATE.MINES_AMOUNT - GAME_STATE.flags
@@ -441,7 +427,6 @@
             if(flags != tile.innerText) return;
             revealBoard(i, j, true)
         }
-
 
         function changeGameState(e){
             let el = e.target
