@@ -54,6 +54,7 @@
             align-items: center;
             background-color: var(--shown-gray);
             border: 5px solid var(--border-top);
+            border-style: inset;
             width: calc(100% - 30px);
             padding: 5px 10px
         }
@@ -63,11 +64,19 @@
             width: 30px !important;
             font-size: larger;
         }
+        #boardContainer{
+            border: 5px solid var(--border-top);
+            background-color: var(--border-top);
+            border-style: outset;
+            height: fit-content;
+        }
         #gameBoard{
             display: flex;
             flex-direction: column;
             width: fit-content;
             border-radius: 3px;
+            border: 5px solid var(--border-top);
+            border-style: inset;
         }
         .optionContainer{
             display: flex;
@@ -207,7 +216,7 @@
             </div>
         </div>
         <div id="gameContainer" style="position: relative;">
-            <div>
+            <div id="boardContainer">
                 <div id="boardHeader">
                     <div id="minesLeft" class="redText"><span>10</span></div>
                     <div id="smiley" class="fa-solid fa-face-smile" onclick="startGame()"></div>
@@ -218,40 +227,73 @@
         </div>
     </div>
     <script>
+        const CONSTS = {
+            MINE_NAME: 'mine',
+            SMILE:{
+                FA:'fa-solid fa-face-smile',
+                TEXT:':D'
+            },
+            LAUGH:{
+                FA:'fa-solid fa-face-laugh-squint',
+                TEXT:'XD'
+            },
+            LOVE:{
+                FA:'fa-solid fa-face-grin-hearts',
+                TEXT:'<3'
+            },
+            MINE:{
+                FA:'fa-solid fa-land-mine-on',
+                TEXT:'B'
+            },
+            INNER_TILE_CLASS: '.tile-inner'
+
+        }
+        const SYMBOLS = {
+            NONE: 0,
+            FLAG: 1,
+            Q_MARK: 2
+        }
         const DEFAULT_TILE = {
             tile: null,
-            symbol: 0,
+            symbol: SYMBOLS.NONE,
             visible: false,
             value: null
         }
-        const elements = {
+        const ELEMENTS = {
             time: document.querySelector('#gameTime span'),
             board:  document.querySelector(`#gameBoard`),
             smiley: document.querySelector('#smiley'),
             mineCount: document.querySelector('#minesLeft span')
         }
-        const isFA = isFontAwesomeLoaded();
+        const isFA = !!window.FontAwesomeKitConfig
         const GAME_STATE = {
             MINES_AMOUNT : 10,
+            VISIBLE_TILES: 0,
             GRID_SIZE: {
                 height: 9,
                 width: 9
             },
             FLAT_BOARD: [],
             BOARD_TILES: [],
-            flags: 0,
-            active: false,
-            last_step: 0,
+            FLAGS: 0,
+            ACTIVE: false,
+            LAST_STEP: 0,
             GAME_TICK: 1000,
         }
-
+        
+        function generateElement(tag, args = {}){
+            let el = document.createElement(tag)
+            el.className  = args.class ?? ''
+            el.id = args.id ?? ''
+            return el
+        }
         function gameClock(timestamp){
-            if(!GAME_STATE.active) return;
-            if(timestamp - GAME_STATE.last_step > GAME_STATE.GAME_TICK){
-                GAME_STATE.last_step = timestamp;
-                let time = elements.time.innerText
+            if(!GAME_STATE.ACTIVE) return;
+            if(timestamp - GAME_STATE.LAST_STEP > GAME_STATE.GAME_TICK){
+                GAME_STATE.LAST_STEP = timestamp;
+                let time = ELEMENTS.time.innerText
                 if(time < 999)
-                    elements.time.innerText++
+                    ELEMENTS.time.innerText++
             }
             requestAnimationFrame(gameClock)
         }
@@ -260,62 +302,64 @@
             initBoard();
             generateMines();
             setTileValues();
-            GAME_STATE.active = true;
-            GAME_STATE.flags = 0;
-            elements.mineCount.innerText = GAME_STATE.MINES_AMOUNT
-            elements.time.innerText = 0
-            elements.smiley.className = 'fa-solid fa-face-smile'
-            if(!isFA) elements.smiley.innerText = ':D'
+            GAME_STATE.ACTIVE = true;
+            GAME_STATE.FLAGS = 0;
+            GAME_STATE.VISIBLE_TILES = 0;
+            ELEMENTS.mineCount.innerText = GAME_STATE.MINES_AMOUNT
+            ELEMENTS.time.innerText = 0
+            ELEMENTS.smiley.className = CONSTS.SMILE.FA
+            if(!isFA) ELEMENTS.smiley.innerText = CONSTS.SMILE.TEXT
             requestAnimationFrame(gameClock)
         }
         function gameLost(){
-            GAME_STATE.active = false;
-            GAME_STATE.FLAT_BOARD.filter(tileObj => tileObj.value == 'mine').forEach(tileObj =>{
-                if(tileObj.symbol == 1) return;
-                tileObj.tile.querySelector('.tile-inner').remove()
-                tileObj.tile.classList.toggle('fa-solid')
-                tileObj.tile.classList.toggle('fa-land-mine-on')
-                if(!isFA) tileObj.tile.innerText = 'B'
+            GAME_STATE.ACTIVE = false;
+            GAME_STATE.FLAT_BOARD.filter(tileObj => tileObj.value == CONSTS.MINE_NAME).forEach(tileObj =>{
+                if(tileObj.symbol === SYMBOLS.FLAG) return;
+                tileObj.tile.querySelector(CONSTS.INNER_TILE_CLASS).remove()
+                tileObj.tile.className = `tile ${CONSTS.MINE.FA}`
+                if(!isFA) tileObj.tile.innerText = CONSTS.MINE.TEXT
                 tileObj.tile.style.backgroundColor = 'red'
             })
-            GAME_STATE.FLAT_BOARD.filter(tileObj => tileObj.value != 'mine' && tileObj.symbol == 1).forEach(tileObj => {
+            GAME_STATE.FLAT_BOARD.filter(tileObj => tileObj.value != CONSTS.MINE_NAME && tileObj.symbol === SYMBOLS.FLAG).forEach(tileObj => {
                 let span = generateElement('span',{class: 'wrongFlag'})
                 span.innerText = 'X'
                 tileObj.tile.append(span)
             })
-            elements.smiley.classList.toggle('fa-face-smile')
-            elements.smiley.classList.toggle('fa-face-laugh-squint')
-            if(!isFA) elements.smiley.innerText = 'XD'
+            ELEMENTS.smiley.className = CONSTS.LAUGH.FA
+            if(!isFA) ELEMENTS.smiley.innerText = CONSTS.SMILE.TEXT
 
         }
         function initBoard(){
-            elements.board.innerHTML = "";
+            ELEMENTS.board.innerHTML = "";
             GAME_STATE.BOARD_TILES = []
+
             for(let i=0; i<GAME_STATE.GRID_SIZE.height;i++){
                 let row = generateElement('div',{class:'row'});
                 GAME_STATE.BOARD_TILES[i] = []
                 for(let j=0; j<GAME_STATE.GRID_SIZE.width;j++){
                     let tile = generateElement('div',{ class:'tile', id:`gameTile_${i}_${j}` })
                     tile.append(generateElement('div',{ class:'tile-inner' }))
-                    GAME_STATE.BOARD_TILES[i][j] = structuredClone(DEFAULT_TILE);
+                    GAME_STATE.BOARD_TILES[i][j] = Object.assign({}, DEFAULT_TILE);
                     GAME_STATE.BOARD_TILES[i][j].tile = tile
                     row.append(tile)
                 }
-                elements.board.append(row)
+                ELEMENTS.board.append(row)
             }
+
             GAME_STATE.FLAT_BOARD = GAME_STATE.BOARD_TILES.flat()
         }
         function generateMines(){
             let boardArr = [...GAME_STATE.FLAT_BOARD]
             for(let i = 0; i < GAME_STATE.MINES_AMOUNT; i++){
                 let mine = boardArr.splice(Math.floor(Math.random()*boardArr.length),1)[0]
-                mine.value = 'mine'
+                mine.value = CONSTS.MINE_NAME
             }
         }
         function setTileValues(){
             for(let i = 0; i < GAME_STATE.BOARD_TILES.length; i++)
                 for(let j = 0; j < GAME_STATE.BOARD_TILES[i].length; j++){
-                    if(GAME_STATE.BOARD_TILES[i][j].value == 'mine') continue;
+                    if(GAME_STATE.BOARD_TILES[i][j].value == CONSTS.MINE_NAME) continue;
+
                     let amount = countSurroundingMines(i,j)
                     if (amount > 0)
                         GAME_STATE.BOARD_TILES[i][j].value = amount
@@ -326,72 +370,76 @@
             for(let iDelta = -1; iDelta <= 1; iDelta++)
                 for(let jDelta = -1; jDelta <= 1; jDelta++)
                     if(i + iDelta >= 0 && j + jDelta >= 0
-                        && GAME_STATE.BOARD_TILES[i + iDelta]?.[j + jDelta]?.value =='mine')
+                        && GAME_STATE.BOARD_TILES[i + iDelta]?.[j + jDelta]?.value == CONSTS.MINE_NAME)
                         amount++
             return amount
+        }
+
+        function pressTile(e){
+            if(!GAME_STATE.ACTIVE) return;
+            e.preventDefault();
+            const el = e.target
+            el.blur();
+            const [i, j] = el.closest('.tile').id.split('_').slice(-2).map(Number)
+             , tileObj = GAME_STATE.BOARD_TILES[i][j];
+
+            if(e.button == 2) return setInnerTileIcon(i, j)
+            else if(e.button == 1) tileObj.visible && checkRevaelSurrounding(i, j)
+            else{
+                if(tileObj.visible || tileObj.symbol !== SYMBOLS.NONE) return;
+                revealBoard(i, j)           
+            }
+            checkWinCondition()
+        }
+        function checkWinCondition(){
+            let nonVisibleTiles = (GAME_STATE.GRID_SIZE.height * GAME_STATE.GRID_SIZE.width) - GAME_STATE.VISIBLE_TILES;
+            if(nonVisibleTiles != GAME_STATE.MINES_AMOUNT) return;
+
+            ELEMENTS.smiley.className = CONSTS.LOVE.FA
+            if(!isFA) ELEMENTS.smiley.innerText = CONSTS.LOVEs.TEXT
+            GAME_STATE.ACTIVE = false;
+        }
+
+        function setInnerTileIcon(i, j){
+            const tileObj = GAME_STATE.BOARD_TILES[i][j];
+            const tileInner = tileObj.tile.querySelector(CONSTS.INNER_TILE_CLASS)
+            if(tileObj.visible || !GAME_STATE.ACTIVE) return;
+
+            if(tileObj.symbol === SYMBOLS.NONE){
+                tileInner.classList.add('fa-solid', 'fa-flag')
+                if(!isFA) tileInner.innerText = 'F'
+                GAME_STATE.FLAGS++
+                tileObj.symbol = SYMBOLS.FLAG
+            }
+            else if(tileObj.symbol === SYMBOLS.FLAG){
+                tileInner.classList.remove('fa-flag')
+                tileInner.classList.add('fa-question')
+                if(!isFA) tileInner.innerText = '?'
+                GAME_STATE.FLAGS--
+                tileObj.symbol = SYMBOLS.Q_MARK
+            }
+            else if(tileObj.symbol === SYMBOLS.Q_MARK){
+                tileInner.classList.remove('fa-solid', 'fa-question')
+                if(!isFA) tileInner.innerText = ''
+                tileObj.symbol = SYMBOLS.NONE
+            }
+
+            ELEMENTS.mineCount.innerText = GAME_STATE.MINES_AMOUNT - GAME_STATE.FLAGS
+        }
+
+        function checkRevaelSurrounding(i, j){
+            const tile = GAME_STATE.BOARD_TILES[i][j].tile
+            if(!tile.innerText || countSurroundingFlags(i,j) != tile.innerText) return;
+            revealBoard(i, j, true)
         }
         function countSurroundingFlags(i,j){
             let amount = 0
             for(let iDelta = -1; iDelta <= 1; iDelta++)
                 for(let jDelta = -1; jDelta <= 1; jDelta++)
                     if(i + iDelta >= 0 && j + jDelta >= 0
-                        && GAME_STATE.BOARD_TILES[i + iDelta]?.[j + jDelta]?.symbol == 1)
+                        && GAME_STATE.BOARD_TILES[i + iDelta]?.[j + jDelta]?.symbol === SYMBOLS.FLAG)
                         amount++
             return amount
-        }
-        function generateElement(tag, args = {}){
-            let el = document.createElement(tag)
-            el.className  = args.class ?? ''
-            el.id = args.id ?? ''
-            return el
-        }
-
-        function pressTile(e){
-            if(!GAME_STATE.active) return;
-            e.preventDefault();
-            const el = e.target
-            el.blur();
-            let [i, j] = el.closest('.tile').id.split('_').slice(-2).map(Number)
-            if(e.button == 2) return setTileMode(i, j)
-            if(e.button == 1) GAME_STATE.BOARD_TILES[i][j].visible && checkRevaelSurrounding(i, j)
-            else{
-                if(GAME_STATE.BOARD_TILES[i][j].visible || GAME_STATE.BOARD_TILES[i][j].symbol != 0) return;
-                if(GAME_STATE.BOARD_TILES[i][j].value == 'mine') return gameLost();
-                revealBoard(i, j)           
-            }
-            let nonVisibleTiles = GAME_STATE.FLAT_BOARD.filter(tileObj => !tileObj.visible).length;
-            if(nonVisibleTiles != GAME_STATE.MINES_AMOUNT) return;
-            elements.smiley.classList.toggle('fa-face-smile')
-            elements.smiley.classList.toggle('fa-face-grin-hearts')
-            if(!isFA) elements.smiley.innerText = '<3'
-            GAME_STATE.active = false;
-        }
-        function setTileMode(i, j){
-            if(!GAME_STATE.active) return;
-            const tileObj = GAME_STATE.BOARD_TILES[i][j];
-            const tileInner = tileObj.tile.querySelector('.tile-inner')
-            if(tileObj.visible) return;
-            if(tileObj.symbol == 0){
-                tileInner.classList.toggle('fa-solid')
-                tileInner.classList.toggle('fa-flag')
-                if(!isFA) tileInner.innerText = 'F'
-                GAME_STATE.flags++
-                tileObj.symbol = 1
-            }
-            else if(tileObj.symbol == 1){
-                tileInner.classList.toggle('fa-flag')
-                tileInner.classList.toggle('fa-question')
-                if(!isFA) tileInner.innerText = '?'
-                GAME_STATE.flags--
-                tileObj.symbol = 2
-            }
-            else if(tileObj.symbol == 2){
-                tileInner.classList.toggle('fa-solid')
-                tileInner.classList.toggle('fa-question')
-                if(!isFA) tileInner.innerText = ''
-                tileObj.symbol = 0
-            }
-            elements.mineCount.innerText = GAME_STATE.MINES_AMOUNT - GAME_STATE.flags
         }
         function revealBoard(startI, startJ, wheelClick = false){
             let tiles = [[startI,startJ]], firstRun = true
@@ -399,14 +447,14 @@
                 let [i, j] = tiles.pop()
                 if(!(wheelClick && firstRun)){
                     let tileObj = GAME_STATE.BOARD_TILES[i]?.[j]
-                    if(!tileObj || tileObj.symbol == 1 || (tileObj.symbol == 2 && !wheelClick)
-                        || tileObj.visible || !GAME_STATE.active) 
+                    if(!tileObj || tileObj.symbol === SYMBOLS.FLAG || (tileObj.symbol === SYMBOLS.Q_MARK && !wheelClick)
+                        || tileObj.visible || !GAME_STATE.ACTIVE) 
                         continue;
-                    if(tileObj.value == 'mine') return gameLost()
+                    if(tileObj.value == CONSTS.MINE_NAME) return gameLost()
     
-                    tileObj.tile.querySelector('.tile-inner').style.display = 'none'
-                    tileObj.visible = true;
-                    tileObj.symbol = 0;
+                    tileObj.tile.querySelector(CONSTS.INNER_TILE_CLASS).remove();
+                    GAME_STATE.VISIBLE_TILES++;
+                    [tileObj.visible, tileObj.symbol] = [true, SYMBOLS.NONE];
                     if(tileObj.value){
                         tileObj.tile.innerText = tileObj.value
                         tileObj.tile.style.color = `var(--number-${tileObj.value})`
@@ -419,13 +467,6 @@
                         if(i + iDelta >= 0 && (iDelta != 0 || jDelta != 0))
                             tiles.push([i + iDelta, j + jDelta])
             }
-        }
-        function checkRevaelSurrounding(i, j){
-            const tile = GAME_STATE.BOARD_TILES[i][j].tile
-            if(!tile.innerText) return;
-            let flags = countSurroundingFlags(i,j)
-            if(flags != tile.innerText) return;
-            revealBoard(i, j, true)
         }
 
         function changeGameState(e){
@@ -440,19 +481,10 @@
             el.blur()
         }
 
-        function isFontAwesomeLoaded() {
-            let span = generateElement('span', {class:'fa'})
-            span.style.display = 'none';
-            document.body.appendChild(span);
-            let result = (window.getComputedStyle(span, null).getPropertyValue('font-family').indexOf('FontAwesome') !== -1);
-            document.body.removeChild(span);
-            return result;
-        }
-
         startGame()
         document.querySelectorAll('.optionContainer button').forEach(el => el.addEventListener('click', changeGameState)) 
-        elements.board.addEventListener('mouseup', pressTile)
-        elements.board.addEventListener('contextmenu', e => e.preventDefault())
+        ELEMENTS.board.addEventListener('mouseup', pressTile)
+        ELEMENTS.board.addEventListener('contextmenu', e => e.preventDefault())
     </script>
 </body>
 </html>
