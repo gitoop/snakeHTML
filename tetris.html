@@ -158,7 +158,7 @@
                 class:'straight',
                 build: [[0,1],[0,1],[0,1]],
                 head: [2,3],
-                center_piece: 1.5
+                center_piece: 2
             },
             square:{
                 class:'square',
@@ -424,17 +424,15 @@
 
         function rotatePiece(){
             let center = Math.ceil(PIECE_TYPES[GAME_STATE.current_piece].center_piece)
-            let isInteger = Number.isInteger(PIECE_TYPES[GAME_STATE.current_piece].center_piece)
             if(!PIECE_TYPES[GAME_STATE.current_piece].center_piece) return;
-            let newPos = getNewTilesForRotate([GAME_STATE.ACTIVE_PIECES[center].i,GAME_STATE.ACTIVE_PIECES[center].j], isInteger)
+            let newPos = getNewTilesForRotate([GAME_STATE.ACTIVE_PIECES[center].i,GAME_STATE.ACTIVE_PIECES[center].j])
             if(!newPos) return;
             movePiece(newPos)
-            if(!isInteger){
+            if(PIECE_TYPES[GAME_STATE.current_piece].class =- 'straight')
                 GAME_STATE.ACTIVE_PIECES = GAME_STATE.ACTIVE_PIECES.reverse()
-            }
         }
 
-        function getNewTilesForRotate(center, CW){
+        function getNewTilesForRotate(center){
             let vectors = GAME_STATE.ACTIVE_PIECES.map(p => ([p.i - center[0], p.j - center[1]]))
             let tempActive = GAME_STATE.ACTIVE_PIECES.map((p,index) => 
                 ({i:center[0] - vectors[index][1], j:center[1] + vectors[index][0], tile: p.tile}))
@@ -448,7 +446,6 @@
             }
             return tempActive;
         }
-
 
         initBoard(ELEMENTS.BOARD, 'BOARD_TILES', GRID_SIZE);
         initBoard(ELEMENTS.NEXT, 'NEXT_TILES', NEXT_GRID_SIZE);
