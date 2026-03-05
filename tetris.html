@@ -385,7 +385,7 @@
             for(let index=0; index < tempActive.length; index++){
                 let [i,j] = [tempActive[index].i, tempActive[index].j]
                 if(i < 0 || j < 0 || !GAME_STATE.BOARD_TILES[i]?.[j]
-                    || (GAME_STATE.BOARD_TILES[i][j].tile.getAttribute('type') && !GAME_STATE.ACTIVE_PIECES.find(el => el.i == i && el.j == j)))
+                    || (GAME_STATE.BOARD_TILES[i][j].state != STATES.empty && !GAME_STATE.ACTIVE_PIECES.find(el => el.i == i && el.j == j)))
                     return null;
 
                 tempActive[index].tile = GAME_STATE.BOARD_TILES[i][j].tile
@@ -428,7 +428,7 @@
             let newPos = getNewTilesForRotate([GAME_STATE.ACTIVE_PIECES[center].i,GAME_STATE.ACTIVE_PIECES[center].j])
             if(!newPos) return;
             movePiece(newPos)
-            if(PIECE_TYPES[GAME_STATE.current_piece].class =- 'straight')
+            if(PIECE_TYPES[GAME_STATE.current_piece].class == 'straight')
                 GAME_STATE.ACTIVE_PIECES = GAME_STATE.ACTIVE_PIECES.reverse()
         }
 
@@ -436,10 +436,15 @@
             let vectors = GAME_STATE.ACTIVE_PIECES.map(p => ([p.i - center[0], p.j - center[1]]))
             let tempActive = GAME_STATE.ACTIVE_PIECES.map((p,index) => 
                 ({i:center[0] - vectors[index][1], j:center[1] + vectors[index][0], tile: p.tile}))
+            if(tempActive.find(el => el.j < 0 || el.j > GRID_SIZE.width - 1)){
+                let Js = tempActive.map(el => el.j)
+                let delta = Math.min(...Js) < 0 ? -Math.min(...Js) : GRID_SIZE.width - 1 - Math.max(...Js)
+                tempActive.forEach(el => el.j  = el.j + delta)
+            }
             for(let index=0; index < tempActive.length; index++){
                 let [i,j] = [tempActive[index].i, tempActive[index].j]
                 if(i < 0 || j < 0 || !GAME_STATE.BOARD_TILES[i]?.[j]
-                    || (GAME_STATE.BOARD_TILES[i][j].tile.getAttribute('type') && !GAME_STATE.ACTIVE_PIECES.find(el => el.i == i && el.j == j)))
+                    || (GAME_STATE.BOARD_TILES[i][j].state != STATES.empty && !GAME_STATE.ACTIVE_PIECES.find(el => el.i == i && el.j == j)))
                     return null;
 
                 tempActive[index].tile = GAME_STATE.BOARD_TILES[i][j].tile
