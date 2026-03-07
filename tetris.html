@@ -9,6 +9,7 @@
     <style>
         :root{
             --tile-color:#182028;
+            --ghost:    #364452;
             --straight: #12c6b3;  /* modern cyan-teal */
             --square:   #f4c430;  /* deeper golden yellow */
             --tee:      #8e44ad;  /* brighter balanced purple */
@@ -18,13 +19,13 @@
             --el:       #f39c12;  /* richer orange */
             --border:#C0C0C0;
         }
-        .gameTile[type="straight"] { --tile-color: var(--straight); }
-        .gameTile[type="square"] { --tile-color: var(--square); }
-        .gameTile[type="tee"] { --tile-color: var(--tee); }
-        .gameTile[type="es"] { --tile-color: var(--es); }
-        .gameTile[type="zee"] { --tile-color: var(--zee); }
-        .gameTile[type="jay"] { --tile-color: var(--jay); }
-        .gameTile[type="el"] { --tile-color: var(--el); }
+        .gameTile[date-type="straight"] { --tile-color: var(--straight); }
+        .gameTile[date-type="square"] { --tile-color: var(--square); }
+        .gameTile[date-type="tee"] { --tile-color: var(--tee); }
+        .gameTile[date-type="es"] { --tile-color: var(--es); }
+        .gameTile[date-type="zee"] { --tile-color: var(--zee); }
+        .gameTile[date-type="jay"] { --tile-color: var(--jay); }
+        .gameTile[date-type="el"] { --tile-color: var(--el); }
         body{
             background-color:black;
             color: green;
@@ -54,7 +55,10 @@
             width: fit-content;
             border-radius: 3px;
         }
-        #gameBoard .gameTile:not([type]){
+        #gameBoard .gameTile:not([date-type]).ghost{
+            background-color: var(--ghost);
+        }
+        #gameBoard .gameTile:not([date-type]){
             background-color: var(--tile-color);
         }
         .gameTile{
@@ -62,7 +66,7 @@
             height: 21px;
             border: 2px solid transparent;
         }
-        .gameTile[type]{
+        .gameTile[date-type]{
             background-color: var(--tile-color);
             border-top: 2px solid color-mix(in srgb, var(--tile-color), white 25%);
             border-left: 2px solid color-mix(in srgb, var(--tile-color), black 10%);
@@ -129,8 +133,9 @@
             <p>where there is only one rule</p>
             <b style="font-size: 120%;">don't die</b>
             <p>(and space to start\restart)</p>
-            <p>(and ↑ to rotate)</p>
-            <p>(and ↓ to drop faster)</p>
+            <p>(and Z to rotate)</p>
+            <p>(and ↑ to hard drop)</p>
+            <p>(and ↓ to soft drop)</p>
             <p>(and ↔ to move)</p>
             <p>(aaaand p to pause\unpause)</p>
             <br/>
@@ -201,7 +206,9 @@
             RIGHT:"ArrowRight",
             LEFT:"ArrowLeft",
             UP: "ArrowUp",
-            DOWN:"ArrowDown"
+            DOWN:"ArrowDown",
+            ROTATE:"KeyZ",
+            PAUSE:"KeyP",
         }
         const SPEED_BY_LEVEL = [
             799, 715, 632, 549, 466, 383, 299, 216, 133, 100, // Levels 0-9
@@ -230,6 +237,7 @@
             empty: null
         }
         const GAME_STATE = {
+            GHOST_TILES: [],
             NEXT_TILES:[],
             BOARD_TILES:[],
             FLAT_BOARD: null,
@@ -256,11 +264,12 @@
         }
         function handleKeyPress(e){
             if(e.key == ' ' && !GAME_STATE.active) return startGame()
-            if(e.code == 'KeyP' && GAME_STATE.active) return togglePauseGame()
+            if(e.code == keys.PAUSE && GAME_STATE.active) return togglePauseGame()
             if(!GAME_STATE.active) return;
-            if(e.key == keys.DOWN) return dropPiece();
-            if([keys.LEFT,keys.RIGHT].includes(e.key)) return lateralMovePiece(e.key);
-            if(e.key == keys.UP) return rotatePiece();
+            if(e.code == keys.DOWN) return dropPiece();
+            if([keys.LEFT,keys.RIGHT].includes(e.code)) return lateralMovePiece(e.code);
+            if(e.code == keys.ROTATE) return rotatePiece();
+            if(e.code == keys.UP) return hardDrop();
         }
 
         function initBoard(board, tileskey, size){
@@ -317,6 +326,8 @@
 
         function generateNextPiece(){
             GAME_STATE.next_piece = PIECE_TYPES_KEYS[Math.floor(Math.random() * PIECE_TYPES_KEYS.length)];
+            if(GAME_STATE.next_piece == GAME_STATE.current_piece && Math.floor(Math.random() * 3))
+                GAME_STATE.next_piece = PIECE_TYPES_KEYS[Math.floor(Math.random() * PIECE_TYPES_KEYS.length)];
             let dir = PIECE_TYPES[GAME_STATE.next_piece].build[0][1];
             let j = dir < 0 ? NEXT_GRID_SIZE.width - 1 : dir == 0 ? Math.floor(NEXT_GRID_SIZE.width/2) : 0
             clearBoard(GAME_STATE.NEXT_TILES)
@@ -336,46 +347,58 @@
             if(!head && tempPieces.filter(el => tiles[el.i][el.j].state == STATES.static).length)
                 return gameOver()
             tempPieces.forEach(el => {
-                tiles[el.i][el.j].tile.setAttribute('type', pieceKey);
+                tiles[el.i][el.j].tile.setAttribute('date-type', pieceKey);
                 tiles[el.i][el.j].state = STATES.active
             }) 
-            if(!head) GAME_STATE.ACTIVE_PIECES = tempPieces;
+            if(!head){
+                GAME_STATE.ACTIVE_PIECES = tempPieces;
+                generateGhostPiece() 
+            } 
         }  
 
         function clearBoard(tiles){
             tiles.forEach(row => row.forEach(cell => {
-                cell.tile.removeAttribute('type')
+                cell.tile.removeAttribute('date-type')
                 cell.state = STATES.empty;
             }));
         }
 
         function dropPiece(){
             let newActive = getNewTilesForMove([1, 0])
-            if(!newActive){
-                GAME_STATE.ACTIVE_PIECES.forEach(el => GAME_STATE.BOARD_TILES[el.i][el.j].state = STATES.static)
-                if(!GAME_STATE.BOARD_TILES.slice(0,2).flat().filter(el => el.state == STATES.empty)) return gameOver();
-                scoreAndReformatBoard();
-                genratePiece(GAME_STATE.BOARD_TILES, GAME_STATE.next_piece)
-                GAME_STATE.current_piece = GAME_STATE.next_piece
-                generateNextPiece();
-            } 
+            if(!newActive) PieceStopCalc()
             else movePiece(newActive)
+        }
+
+        function hardDrop(){
+            let final = getFinalPos();
+            movePiece(final)
+            PieceStopCalc()
+        }
+
+        function PieceStopCalc(){
+            GAME_STATE.ACTIVE_PIECES.forEach(el => GAME_STATE.BOARD_TILES[el.i][el.j].state = STATES.static)
+            if(!GAME_STATE.BOARD_TILES.slice(0,2).flat().filter(el => el.state == STATES.empty)) return gameOver();
+            scoreAndReformatBoard();
+            genratePiece(GAME_STATE.BOARD_TILES, GAME_STATE.next_piece)
+            GAME_STATE.current_piece = GAME_STATE.next_piece
+            generateNextPiece();
         }
 
         function lateralMovePiece(key){        
             let newActive = getNewTilesForMove([0, key == keys.LEFT ? -1 : 1])
             if(!newActive) return;
             movePiece(newActive)
+            generateGhostPiece()
         }
 
         function movePiece(newPos){
             GAME_STATE.ACTIVE_PIECES.forEach(el => {
-                el.tile.removeAttribute('type')
+                el.tile.removeAttribute('date-type')
                 GAME_STATE.BOARD_TILES[el.i][el.j].state = STATES.empty
             })
             GAME_STATE.ACTIVE_PIECES = newPos
             GAME_STATE.ACTIVE_PIECES.forEach(el => {
-                el.tile.setAttribute('type', GAME_STATE.current_piece)
+                el.tile.setAttribute('date-type', GAME_STATE.current_piece)
                 GAME_STATE.BOARD_TILES[el.i][el.j].state = STATES.active
             })
         }
@@ -391,6 +414,27 @@
                 tempActive[index].tile = GAME_STATE.BOARD_TILES[i][j].tile
             }
             return tempActive;
+        }
+
+        function getFinalPos(){
+            let i=0, current = [], next = [];
+            do{
+                current = next
+                i++
+                next = getNewTilesForMove([i,0])
+            } while(next)
+            return current || null;
+        }
+
+        function generateGhostPiece(){
+            clearGhostPieces()
+            let final = getFinalPos();
+            final.forEach(el => el.tile.classList.add('ghost'))
+            GAME_STATE.GHOST_TILES = final
+        }
+
+        function clearGhostPieces(){
+            GAME_STATE.GHOST_TILES.forEach(el => el.tile.classList.remove('ghost'))
         }
 
         function scoreAndReformatBoard(){
@@ -430,6 +474,7 @@
             movePiece(newPos)
             if(PIECE_TYPES[GAME_STATE.current_piece].class == 'straight')
                 GAME_STATE.ACTIVE_PIECES = GAME_STATE.ACTIVE_PIECES.reverse()
+            generateGhostPiece()
         }
 
         function getNewTilesForRotate(center){
