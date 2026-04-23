@@ -395,7 +395,7 @@
                 ELEMENTS.LEVEL.blur();
                 ELEMENTS.LEVEL.innerText = Math.min((num || 1), LEVELS.length)
             }
-            GAME_STATE.level = num - 1
+            GAME_STATE.level = ELEMENTS.LEVEL.innerText - 1
             startGame();
         }
 
