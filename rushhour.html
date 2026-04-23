@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rush Hour</title>
+</head>
+<body dir="ltr">
+    <style>
+        :root{
+            --color-main: #e74c3c; /* Red */
+            --color-car-1: #3498db;  /* Blue */
+            --color-car-2: #2ecc71;  /* Green */
+            --color-car-3: #f1c40f;  /* Yellow */
+            --color-car-4: #9b59b6;  /* Purple */
+            --color-car-5: #e67e22;  /* Orange */
+            --color-car-6: #1abc9c;  /* Teal */
+            --color-car-7: #f39c12;  /* Gold */
+            --color-car-8: #d35400;  /* Dark Orange */
+            --color-car-9: #c0392b;  /* Dark Red/Brown */
+            --color-car-10: #8e44ad; /* Violet */
+            --color-car-11: #27ae60; /* Dark Green */
+            --color-car-12: #2980b9; /* Dark Blue */
+            --color-truck-1: #7f8c8d; /* Grey */
+            --color-truck-2: #34495e; /* Navy */
+            --color-truck-3: #16a085; /* Sea Green */
+            --color-truck-4: #2c3e50; /* Charcoal */ 
+
+            --border:   #303435;
+            --background: #52595e;
+            --tile-color:#5a5f63;
+        }
+        /* Main Car */
+        .piece[type="main"] { --piece-color: var(--color-main); }
+        .piece[type="car_1"] { --piece-color: var(--color-car-1); }
+        .piece[type="car_2"] { --piece-color: var(--color-car-2); }
+        .piece[type="car_3"] { --piece-color: var(--color-car-3); }
+        .piece[type="car_4"] { --piece-color: var(--color-car-4); }
+        .piece[type="car_5"] { --piece-color: var(--color-car-5); }
+        .piece[type="car_6"] { --piece-color: var(--color-car-6); }
+        .piece[type="car_7"] { --piece-color: var(--color-car-7); }
+        .piece[type="car_8"] { --piece-color: var(--color-car-8); }
+        .piece[type="car_9"] { --piece-color: var(--color-car-9); }
+        .piece[type="car_10"] { --piece-color: var(--color-car-10); }
+        .piece[type="car_11"] { --piece-color: var(--color-car-11); }
+        .piece[type="car_12"] { --piece-color: var(--color-car-12); }
+        .piece[type="truck_1"] { --piece-color: var(--color-truck-1); }
+        .piece[type="truck_2"] { --piece-color: var(--color-truck-2); }
+        .piece[type="truck_3"] { --piece-color: var(--color-truck-3); }
+        .piece[type="truck_4"] { --piece-color: var(--color-truck-4); }
+        .piece {
+            position: absolute;
+            background-color: var(--piece-color);
+            cursor: pointer;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.25);
+            transition: transform 0.1s ease;
+        }
+        .piece::before {
+            content: "";
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        .piece.hori {
+            border-radius: 10px 30px 30px 10px;
+        }
+        .piece.hori.truck {
+            border-radius: 10px 20px 20px 10px;
+        }
+        .piece.hori::before {
+            top: 10%;
+            right: 20%;
+            width: 20%;
+            height: 80%;
+        }
+        .piece.hori.truck::before {
+            right: 15%;
+            width: 10%;
+        }
+        .piece.hori::after {
+            left: 6px;
+            bottom: 6px;
+            box-shadow: calc(100% - 14px) 0 0 #111;
+        }
+        .piece.vert {
+            border-radius: 30px 30px 10px 10px;
+        }
+        .piece.vert.truck {
+            border-radius: 20px 20px 10px 10px;
+        }
+        .piece.vert::before {
+            top: 20%;
+            left: 10%;
+            width: 80%;
+            height: 20%;
+        }
+        .piece.vert.truck::before {
+            top: 15%;
+            height: 10%;
+        }
+        .piece.vert::after {
+            left: 6px;
+            top: 6px;
+            box-shadow: 0 calc(100% - 14px) 0 #111;
+        }
+        body{
+            background-color:black;
+            color: green;
+            font-family: monospace;
+        }
+        .gameRow{
+            display: flex;
+            flex-direction: row;
+            width: fit-content;
+        }
+        #gameContainer{
+            margin-top:50px;
+            width:100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;            
+        }
+        #gameBoard{
+            display: flex;
+            flex-direction: column;
+            background-color: var(--background);
+            border:15px solid var(--border);
+            width: fit-content;
+            border-radius: 2px;
+            position: relative;
+        }
+        #exitLip{
+            position: absolute;
+            width: 15px;
+            height: calc(56px + 2*6px);
+            right:-15px;
+            top: calc(100% / 3);
+            background-color: var(--background);
+        }
+        #levelSelect{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 5px;
+        }
+        #levelSelect > b {
+            padding: 0 15px ;
+            cursor:pointer;
+        }
+        .gameTile{
+            width: 56px;
+            height: 56px;
+            margin: 6px;
+            border-radius: 2px;
+            background-color: var(--tile-color);
+            box-shadow: -2px -2px 3px rgba(0, 0, 0, 0.3);
+        }
+        .banner{
+            min-width: 40%;
+            margin: 50px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+        p{
+            text-align: center;
+            white-space: pre;
+            margin: 2px 0;
+        }
+        .gameMessage{
+            position:absolute;
+            transform: translate(-50%, -50%);
+            top:50%;
+            left: 50%;
+            font-weight: bolder;
+            font-size: 400%;
+            text-align: center;
+            background-color: rgb(0, 0, 0, 60%);
+            z-index: 7;
+        }
+        #win{
+            color: green;
+            display: none;
+        }
+    </style>
+    <div style="display: flex; flex-direction: row;" >
+        <div id="leftBanner" class="banner">
+            <span style="white-space: pre;">
+ /$$$$$$$                      /$$             /$$   /$$                              
+| $$__  $$                    | $$            | $$  | $$                              
+| $$  \ $$ /$$   /$$  /$$$$$$$| $$$$$$$       | $$  | $$  /$$$$$$  /$$   /$$  /$$$$$$ 
+| $$$$$$$/| $$  | $$ /$$_____/| $$__  $$      | $$$$$$$$ /$$__  $$| $$  | $$ /$$__  $$
+| $$__  $$| $$  | $$|  $$$$$$ | $$  \ $$      | $$__  $$| $$  \ $$| $$  | $$| $$  \__/
+| $$  \ $$| $$  | $$ \____  $$| $$  | $$      | $$  | $$| $$  | $$| $$  | $$| $$      
+| $$  | $$|  $$$$$$/ /$$$$$$$/| $$  | $$      | $$  | $$|  $$$$$$/|  $$$$$$/| $$      
+|__/  |__/ \______/ |_______/ |__/  |__/      |__/  |__/ \______/  \______/ |__/      
+            </span>
+            <p>welcome to Rush Hour</p>
+            <p>a small fun interactive game</p>
+            <p>where there is only one rule</p>
+            <b style="font-size: 120%;">don't be a loser</b>
+            <p>(and space to start\restart)</p>
+            <p>(and press + drag to move)</p>
+            <br/>
+            <p>have fun</p>
+            <br/>
+            <bold>LEVEL</bold>
+            <div id="levelSelect">
+                <b onclick="changeLevel(-1)">&lt;</b>
+                <p id="level">1</p>
+                <b onclick="changeLevel(1)">&gt;</b>
+            </div>
+        </div>
+        <div id="gameContainer" style="position: relative;">
+            <div id="boardContainer">
+                <div id="win" class="gameMessage">CONGRATS</div>
+                <div id="gameBoard"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const GRID_SIZE = { height: 6, width: 6 };
+        const consts = {
+            tileSizePx: 68 
+        }
+        const keys = {
+            RIGHT:"ArrowRight",
+            LEFT:"ArrowLeft",
+        }
+        const orientation = {
+            horizontal: 0,
+            vertical: 1
+        }
+        const orientationMap = {
+            0: orientation.horizontal,
+            1: orientation.vertical
+        }
+        const ELEMENTS = {
+            BOARD: document.querySelector(`#gameBoard`),
+            LEVEL: document.querySelector('#level'),
+            WIN: document.querySelector('#win'),
+        }
+        const LEVELS = [
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":2,"col":2,"length":3,"ori":1},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":4,"col":1,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":3,"length":3,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":1,"col":0,"length":3,"ori":1},{"main":0,"row":1,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":1,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":5,"col":2,"length":2,"ori":0},{"main":0,"row":2,"col":3,"length":3,"ori":1},{"main":0,"row":2,"col":0,"length":3,"ori":1},{"main":0,"row":1,"col":0,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":3,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":0},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":4,"col":2,"length":3,"ori":0},{"main":0,"row":2,"col":5,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":5,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":3,"ori":0},{"main":0,"row":2,"col":4,"length":3,"ori":1},{"main":0,"row":0,"col":4,"length":2,"ori":0},{"main":0,"row":2,"col":3,"length":2,"ori":1},{"main":0,"row":1,"col":1,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":3,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":3,"col":3,"length":3,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":3,"ori":1},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":1},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":4,"col":2,"length":3,"ori":0},{"main":0,"row":2,"col":2,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":3,"length":2,"ori":0},{"main":0,"row":4,"col":3,"length":3,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":5,"length":3,"ori":1},{"main":0,"row":3,"col":3,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":1},{"main":0,"row":4,"col":1,"length":2,"ori":1},{"main":0,"row":2,"col":5,"length":2,"ori":1},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":5,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":0,"length":2,"ori":1},{"main":0,"row":2,"col":4,"length":3,"ori":1},{"main":0,"row":1,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":1,"length":2,"ori":1},{"main":0,"row":2,"col":3,"length":3,"ori":1},{"main":0,"row":1,"col":5,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":2,"ori":0},{"main":0,"row":4,"col":3,"length":3,"ori":0},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":1,"col":0,"length":3,"ori":1},{"main":0,"row":1,"col":5,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":3,"length":2,"ori":1},{"main":0,"row":2,"col":0,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":3,"col":1,"length":3,"ori":1},{"main":0,"row":2,"col":3,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":2,"length":3,"ori":1},{"main":0,"row":2,"col":4,"length":3,"ori":1},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":3,"length":3,"ori":1},{"main":0,"row":5,"col":4,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":2,"col":0,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":5,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":1},{"main":0,"row":5,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":4,"col":0,"length":2,"ori":1},{"main":0,"row":5,"col":3,"length":3,"ori":0},{"main":0,"row":3,"col":2,"length":3,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":3,"length":2,"ori":0},{"main":0,"row":5,"col":4,"length":2,"ori":0},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":2,"col":0,"length":3,"ori":1},{"main":0,"row":4,"col":2,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":2,"col":2,"length":2,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":1,"col":1,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":3,"length":3,"ori":1},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":3,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":1,"length":3,"ori":0},{"main":0,"row":2,"col":4,"length":3,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":4,"col":1,"length":2,"ori":1},{"main":0,"row":4,"col":2,"length":2,"ori":1},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":5,"col":4,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":3,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":1},{"main":0,"row":2,"col":1,"length":3,"ori":1},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":0,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":1,"col":1,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":4,"col":2,"length":2,"ori":1},{"main":0,"row":3,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":3,"length":2,"ori":1},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":1,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":2,"col":5,"length":2,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":2,"col":2,"length":2,"ori":1},{"main":0,"row":5,"col":0,"length":3,"ori":0},{"main":0,"row":0,"col":5,"length":2,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":1},{"main":0,"row":0,"col":1,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":3,"ori":1},{"main":0,"row":3,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":2,"length":3,"ori":0},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":3,"col":2,"length":2,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":1,"length":2,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":3,"length":2,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":1,"length":3,"ori":1},{"main":0,"row":3,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":4,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":2,"length":3,"ori":0},{"main":0,"row":4,"col":3,"length":3,"ori":0},{"main":0,"row":0,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":1,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":0,"col":2,"length":3,"ori":1},{"main":0,"row":4,"col":2,"length":3,"ori":0},{"main":0,"row":4,"col":1,"length":2,"ori":1},{"main":0,"row":3,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":0,"col":1,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":3,"ori":1},{"main":0,"row":3,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":1,"col":3,"length":3,"ori":0},{"main":0,"row":4,"col":1,"length":3,"ori":0},{"main":0,"row":0,"col":1,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":1,"length":3,"ori":0},{"main":0,"row":4,"col":2,"length":2,"ori":1},{"main":0,"row":4,"col":3,"length":3,"ori":0},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":1,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":2,"length":3,"ori":0},{"main":0,"row":5,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":2,"ori":0},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":3,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":4,"col":0,"length":2,"ori":1},{"main":0,"row":4,"col":1,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":5,"length":2,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":5,"col":0,"length":2,"ori":0},{"main":0,"row":0,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":2,"length":2,"ori":1},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":3,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":3,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":2,"col":0,"length":3,"ori":1},{"main":0,"row":4,"col":2,"length":3,"ori":0},{"main":0,"row":5,"col":3,"length":3,"ori":0},{"main":0,"row":0,"col":0,"length":3,"ori":0},{"main":0,"row":3,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":3,"ori":0},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":4,"col":1,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":0},{"main":0,"row":5,"col":0,"length":2,"ori":0},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":1,"col":3,"length":3,"ori":1},{"main":0,"row":4,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":1,"length":2,"ori":1},{"main":0,"row":0,"col":4,"length":2,"ori":0},{"main":0,"row":4,"col":5,"length":2,"ori":1},{"main":0,"row":3,"col":4,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":5,"col":4,"length":2,"ori":0},{"main":0,"row":3,"col":3,"length":3,"ori":1},{"main":0,"row":2,"col":4,"length":3,"ori":1},{"main":0,"row":4,"col":1,"length":2,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":0},{"main":0,"row":3,"col":2,"length":3,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":1,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":0},{"main":0,"row":4,"col":0,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":4,"col":1,"length":3,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":3,"length":3,"ori":1},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":3,"ori":1},{"main":0,"row":2,"col":3,"length":2,"ori":1},{"main":0,"row":1,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":0,"col":1,"length":3,"ori":0},{"main":0,"row":4,"col":2,"length":3,"ori":0},{"main":0,"row":0,"col":5,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":1,"length":3,"ori":0},{"main":0,"row":3,"col":1,"length":3,"ori":0},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":4,"col":0,"length":3,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":1,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":5,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":2,"col":0,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":3,"ori":1},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":0},{"main":0,"row":4,"col":1,"length":2,"ori":0},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":3,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":2,"col":1,"length":3,"ori":1},{"main":0,"row":0,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":3,"col":3,"length":3,"ori":0},{"main":0,"row":4,"col":3,"length":3,"ori":0},{"main":0,"row":0,"col":5,"length":3,"ori":1},{"main":0,"row":1,"col":2,"length":2,"ori":0},{"main":0,"row":5,"col":3,"length":3,"ori":0},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":3,"length":2,"ori":0},{"main":0,"row":4,"col":4,"length":2,"ori":1},{"main":0,"row":3,"col":5,"length":3,"ori":1},{"main":0,"row":5,"col":0,"length":3,"ori":0},{"main":0,"row":3,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":3,"ori":1},{"main":0,"row":3,"col":0,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":0},{"main":0,"row":2,"col":2,"length":2,"ori":1},{"main":0,"row":1,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":3,"ori":1},{"main":0,"row":5,"col":3,"length":3,"ori":0},{"main":0,"row":4,"col":2,"length":3,"ori":0},{"main":0,"row":0,"col":5,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":3,"ori":1},{"main":0,"row":0,"col":0,"length":3,"ori":0},{"main":0,"row":4,"col":0,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":1},{"main":0,"row":3,"col":0,"length":3,"ori":0},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":1,"col":0,"length":2,"ori":0},{"main":0,"row":5,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":3,"length":3,"ori":0},{"main":0,"row":4,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":1,"length":3,"ori":0},{"main":0,"row":0,"col":1,"length":2,"ori":1},{"main":0,"row":1,"col":5,"length":3,"ori":1},{"main":0,"row":5,"col":3,"length":3,"ori":0},{"main":0,"row":1,"col":3,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":3,"ori":0},{"main":0,"row":4,"col":2,"length":2,"ori":1},{"main":0,"row":1,"col":0,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":2,"col":5,"length":2,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":0,"col":1,"length":3,"ori":1},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":4,"col":0,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":3,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":2,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":1,"length":3,"ori":1},{"main":0,"row":1,"col":5,"length":3,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":3,"ori":1},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":3,"col":2,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":5,"col":1,"length":3,"ori":0},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":4,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":1},{"main":0,"row":4,"col":0,"length":3,"ori":0},{"main":0,"row":1,"col":1,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":4,"col":1,"length":2,"ori":1},{"main":0,"row":1,"col":5,"length":3,"ori":1},{"main":0,"row":3,"col":0,"length":3,"ori":0},{"main":0,"row":2,"col":3,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":2,"length":2,"ori":0},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":5,"col":3,"length":3,"ori":0},{"main":0,"row":4,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":1,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":1,"length":3,"ori":0},{"main":0,"row":0,"col":4,"length":2,"ori":0},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":2,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":3,"col":5,"length":2,"ori":1},{"main":0,"row":4,"col":1,"length":2,"ori":1},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":3,"col":2,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":1},{"main":0,"row":2,"col":4,"length":3,"ori":1},{"main":0,"row":3,"col":1,"length":2,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":1,"col":4,"length":2,"ori":0},{"main":0,"row":0,"col":1,"length":3,"ori":0},{"main":0,"row":4,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":0,"col":0,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":3,"ori":1},{"main":0,"row":0,"col":3,"length":3,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":3,"col":3,"length":2,"ori":0},{"main":0,"row":2,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":2,"length":2,"ori":1},{"main":0,"row":3,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":4,"col":5,"length":2,"ori":1},{"main":0,"row":1,"col":0,"length":3,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":1},{"main":0,"row":3,"col":1,"length":2,"ori":0},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":3,"ori":0},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":1,"col":1,"length":3,"ori":0},{"main":0,"row":5,"col":3,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":0,"col":1,"length":3,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":0,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":5,"length":2,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":1},{"main":0,"row":0,"col":5,"length":2,"ori":1},{"main":0,"row":3,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":4,"col":4,"length":2,"ori":1},{"main":0,"row":4,"col":0,"length":3,"ori":0},{"main":0,"row":0,"col":3,"length":3,"ori":1},{"main":0,"row":3,"col":3,"length":3,"ori":0},{"main":0,"row":5,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":2,"ori":1},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":0,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":2,"length":2,"ori":1},{"main":0,"row":5,"col":0,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":3,"length":3,"ori":0},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":4,"col":1,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":1},{"main":0,"row":3,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":0},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":1,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":0,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":1,"length":2,"ori":1},{"main":0,"row":5,"col":3,"length":3,"ori":0},{"main":0,"row":0,"col":4,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":0},{"main":0,"row":4,"col":2,"length":2,"ori":1},{"main":0,"row":3,"col":1,"length":3,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":5,"length":2,"ori":1},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":4,"col":0,"length":2,"ori":0},{"main":0,"row":3,"col":2,"length":2,"ori":1},{"main":0,"row":1,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":5,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":1,"length":3,"ori":0},{"main":0,"row":3,"col":1,"length":3,"ori":0},{"main":0,"row":4,"col":3,"length":2,"ori":1},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":1,"col":5,"length":3,"ori":1},{"main":0,"row":4,"col":2,"length":2,"ori":1},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":5,"col":4,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":3,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":3,"length":2,"ori":0},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":2,"col":1,"length":3,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":0},{"main":0,"row":4,"col":3,"length":2,"ori":1},{"main":0,"row":1,"col":5,"length":3,"ori":1},{"main":0,"row":5,"col":0,"length":3,"ori":0},{"main":0,"row":0,"col":4,"length":2,"ori":1},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":2,"col":2,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":4,"col":2,"length":2,"ori":1},{"main":0,"row":3,"col":1,"length":3,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":2,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":3,"ori":1},{"main":0,"row":1,"col":5,"length":3,"ori":1},{"main":0,"row":5,"col":3,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":3,"length":3,"ori":1},{"main":0,"row":2,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":0,"length":2,"ori":0},{"main":0,"row":5,"col":4,"length":2,"ori":0},{"main":0,"row":3,"col":2,"length":3,"ori":1},{"main":0,"row":4,"col":0,"length":2,"ori":1},{"main":0,"row":4,"col":1,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":3,"ori":0},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":5,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":2,"col":4,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":0,"col":5,"length":2,"ori":1},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":3,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":2,"col":0,"length":2,"ori":1},{"main":0,"row":5,"col":0,"length":3,"ori":0},{"main":0,"row":4,"col":3,"length":2,"ori":1},{"main":0,"row":2,"col":5,"length":2,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":0},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":4,"col":0,"length":2,"ori":1},{"main":0,"row":4,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":5,"length":3,"ori":1},{"main":0,"row":1,"col":2,"length":3,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":5,"col":1,"length":3,"ori":0},{"main":0,"row":4,"col":1,"length":3,"ori":0},{"main":0,"row":0,"col":1,"length":2,"ori":1},{"main":0,"row":2,"col":3,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":3,"length":2,"ori":0},{"main":0,"row":3,"col":3,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":2,"ori":1},{"main":0,"row":0,"col":5,"length":3,"ori":1},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":2,"col":0,"length":2,"ori":1},{"main":0,"row":2,"col":1,"length":2,"ori":1},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":2,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":0,"col":3,"length":3,"ori":0},{"main":0,"row":3,"col":1,"length":2,"ori":1},{"main":0,"row":5,"col":2,"length":2,"ori":0},{"main":0,"row":4,"col":2,"length":3,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":2,"length":2,"ori":1},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":1,"col":1,"length":3,"ori":0},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":4,"col":5,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":5,"length":3,"ori":1},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":3,"col":0,"length":2,"ori":0},{"main":0,"row":0,"col":2,"length":3,"ori":0},{"main":0,"row":0,"col":1,"length":3,"ori":1},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":3,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":3,"length":3,"ori":1},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":1,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":2,"length":2,"ori":1},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":0,"col":4,"length":3,"ori":1},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":5,"col":0,"length":2,"ori":0},{"main":0,"row":0,"col":2,"length":3,"ori":0},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":2,"col":3,"length":2,"ori":1},{"main":0,"row":3,"col":0,"length":2,"ori":1},{"main":0,"row":4,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":4,"col":5,"length":2,"ori":1},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":2,"col":2,"length":2,"ori":1},{"main":0,"row":1,"col":1,"length":2,"ori":0},{"main":0,"row":5,"col":2,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":2,"ori":1},{"main":0,"row":1,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":1,"length":2,"ori":0},{"main":0,"row":5,"col":0,"length":3,"ori":0},{"main":0,"row":0,"col":3,"length":3,"ori":1},{"main":0,"row":4,"col":0,"length":3,"ori":0},{"main":0,"row":4,"col":5,"length":2,"ori":1},{"main":0,"row":3,"col":4,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":1,"length":3,"ori":0},{"main":0,"row":4,"col":3,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":2,"length":2,"ori":1},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":3,"length":2,"ori":1},{"main":0,"row":5,"col":2,"length":3,"ori":0},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":0,"col":3,"length":3,"ori":0},{"main":0,"row":4,"col":1,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":3,"col":3,"length":2,"ori":0},{"main":0,"row":4,"col":2,"length":2,"ori":0},{"main":0,"row":4,"col":0,"length":2,"ori":1},{"main":0,"row":2,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":3,"ori":0},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":1,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":3,"ori":1},{"main":0,"row":0,"col":0,"length":2,"ori":0},{"main":0,"row":3,"col":3,"length":3,"ori":0},{"main":0,"row":4,"col":2,"length":3,"ori":0},{"main":0,"row":2,"col":0,"length":3,"ori":1},{"main":0,"row":4,"col":5,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":0},{"main":0,"row":4,"col":0,"length":3,"ori":0},{"main":0,"row":1,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":2,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":5,"col":0,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":0,"col":2,"length":3,"ori":0},{"main":0,"row":2,"col":5,"length":2,"ori":1},{"main":0,"row":3,"col":2,"length":2,"ori":1},{"main":0,"row":3,"col":3,"length":2,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":1,"col":4,"length":3,"ori":1},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":0,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":1,"col":1,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":3,"ori":0},{"main":0,"row":5,"col":3,"length":3,"ori":0},{"main":0,"row":3,"col":5,"length":2,"ori":1},{"main":0,"row":3,"col":0,"length":3,"ori":0},{"main":0,"row":4,"col":0,"length":2,"ori":1},{"main":0,"row":4,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":1,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":5,"length":2,"ori":1},{"main":0,"row":2,"col":3,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":3,"length":2,"ori":1},{"main":0,"row":3,"col":0,"length":2,"ori":0},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":0,"col":1,"length":2,"ori":0},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":3,"ori":1},{"main":0,"row":3,"col":2,"length":2,"ori":1},{"main":0,"row":5,"col":3,"length":2,"ori":0},{"main":0,"row":0,"col":5,"length":3,"ori":1}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":3,"length":3,"ori":0},{"main":0,"row":3,"col":4,"length":2,"ori":1},{"main":0,"row":2,"col":0,"length":3,"ori":1},{"main":0,"row":2,"col":3,"length":2,"ori":1},{"main":0,"row":4,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":3,"length":2,"ori":0},{"main":0,"row":5,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":1,"length":2,"ori":1},{"main":0,"row":2,"col":5,"length":3,"ori":1},{"main":0,"row":5,"col":4,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":1}],
+            [{"main":1,"row":2,"col":2,"length":2,"ori":0},{"main":0,"row":3,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":5,"length":3,"ori":1},{"main":0,"row":0,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":1,"length":2,"ori":0},{"main":0,"row":1,"col":0,"length":2,"ori":1},{"main":0,"row":5,"col":1,"length":2,"ori":0},{"main":0,"row":3,"col":1,"length":2,"ori":1},{"main":0,"row":2,"col":4,"length":2,"ori":1},{"main":0,"row":4,"col":4,"length":2,"ori":0},{"main":0,"row":0,"col":4,"length":2,"ori":0},{"main":0,"row":4,"col":3,"length":2,"ori":1},{"main":0,"row":1,"col":3,"length":2,"ori":0}],
+            [{"main":1,"row":2,"col":1,"length":2,"ori":0},{"main":0,"row":2,"col":0,"length":3,"ori":1},{"main":0,"row":3,"col":4,"length":3,"ori":1},{"main":0,"row":3,"col":1,"length":2,"ori":1},{"main":0,"row":1,"col":4,"length":2,"ori":0},{"main":0,"row":0,"col":0,"length":2,"ori":1},{"main":0,"row":3,"col":5,"length":2,"ori":1},{"main":0,"row":5,"col":0,"length":2,"ori":0},{"main":0,"row":4,"col":2,"length":2,"ori":0},{"main":0,"row":1,"col":3,"length":2,"ori":1},{"main":0,"row":5,"col":2,"length":2,"ori":0},{"main":0,"row":0,"col":2,"length":2,"ori":1},{"main":0,"row":0,"col":3,"length":3,"ori":0}],
+            [{"main":1,"row":2,"col":0,"length":2,"ori":0},{"main":0,"row":4,"col":5,"length":2,"ori":1},{"main":0,"row":1,"col":5,"length":2,"ori":1},{"main":0,"row":2,"col":2,"length":3,"ori":1},{"main":0,"row":5,"col":1,"length":3,"ori":0},{"main":0,"row":4,"col":0,"length":2,"ori":1},{"main":0,"row":1,"col":2,"length":2,"ori":0},{"main":0,"row":2,"col":3,"length":2,"ori":1},{"main":0,"row":0,"col":1,"length":2,"ori":1},{"main":0,"row":4,"col":3,"length":2,"ori":0},{"main":0,"row":3,"col":4,"length":2,"ori":0}]
+        ]
+        const GAME_STATE = {
+            PIECES:[],
+            active: false,
+            level: 0,
+            mouse:{
+                pressed:0,
+                piece: null
+            }
+        }
+
+        function generateElement(tag, args = {}){
+            let el = document.createElement(tag)
+            el.className = args.class ?? ''
+            el.id = args.id ?? ''
+            el.setAttribute('type', args.type)
+            el.style.height = args.height ?? ''
+            el.style.width = args.width ?? ''
+            el.style.top = args.top ?? ''
+            el.style.left = args.left ?? ''
+            return el
+        }
+
+        function handleKeyPress(e){
+            if(e.key == ' ') return startGame()
+        }
+
+        function initBoard(board){
+            board.innerHTML = "";
+            board.append(generateElement('div',{ id:'exitLip' }))
+            for(let i=0; i<GRID_SIZE.height;i++){
+                let row = generateElement('div',{class:'gameRow'});
+                for(let j=0; j<GRID_SIZE.width;j++)
+                    row.append(generateElement('div',{ class:'gameTile' }))
+                board.append(row)
+            }
+        }
+
+        function initGameState(){
+            GAME_STATE.active = true;
+            GAME_STATE.mouse.pressed = false;
+        }
+
+        function startGame(){
+            initGameState()
+            setPeices()
+        }
+        
+        function setPeices(){
+            let car = 0, truck = 0
+            GAME_STATE.PIECES.forEach(i => i.piece.remove())
+            GAME_STATE.PIECES = []
+            LEVELS[GAME_STATE.level].forEach(i => {
+                let pieceEl
+                if(i.main == 1) pieceEl = generatePiece(i, 'main')
+                else if(i.length == 2) pieceEl = generatePiece(i, `car_${++car}`)
+                else if(i.length == 3) pieceEl = generatePiece(i, `truck_${++truck}`)
+                else return;
+
+                GAME_STATE.PIECES.push(pieceEl)
+                ELEMENTS.BOARD.append(pieceEl.piece)
+            })
+        }
+
+        function changeLevel(delta){
+            if(GAME_STATE.level + delta < 0 || GAME_STATE.level + delta >= LEVELS.length) return;
+
+            GAME_STATE.level += delta
+            ELEMENTS.LEVEL.innerText = GAME_STATE.level + 1
+            startGame();
+        }
+
+        function generatePiece(piece, type){
+            return {
+                type: type.split('_')[0],
+                piece: generateElement('div', {
+                    class: `piece ${piece.ori == orientation.horizontal ? 'hori' : 'vert'} ${type.split('_')[0]}`,
+                    type: type,
+                    top: `${piece.row * consts.tileSizePx}px`,
+                    left: `${piece.col * consts.tileSizePx}px`,
+                    width: piece.ori == orientation.horizontal ?  `${piece.length * consts.tileSizePx}px` : `${consts.tileSizePx}px`,
+                    height: piece.ori == orientation.horizontal ?  `${consts.tileSizePx}px` : `${piece.length * consts.tileSizePx}px`,
+                })
+            }
+        }  
+
+        function clearBoard(tiles){
+            tiles.forEach(row => row.forEach(cell => {
+                cell.tile.removeAttribute('date-type')
+                cell.state = STATES.empty;
+            }));
+        }
+
+        function mouseClick(e){
+            if(!e.target.classList.contains('piece') || !GAME_STATE.active) return;
+
+            GAME_STATE.mouse.pressed = true;
+            GAME_STATE.mouse.piece = e.target;
+            e.target.setPointerCapture?.(e.pointerId);
+            document.body.style.cursor = 'grabbing'
+            GAME_STATE.PIECES.forEach(i => i.piece.style.cursor = 'grabbing')
+        }
+        function mouseReleased(e){
+            if(!GAME_STATE.mouse.pressed) return;
+
+            GAME_STATE.mouse.pressed = false;
+            GAME_STATE.mouse.piece?.releasePointerCapture?.(e.pointerId);
+            document.body.style.cursor = 'unset'
+            GAME_STATE.PIECES.forEach(i => i.piece.style.cursor = 'unset')
+            const RoundProper = (i) => {
+                if(i == 0 || consts.tileSizePx - i > i) return -i;
+                return consts.tileSizePx - i
+            }    
+            let modTop = RoundProper(GAME_STATE.mouse.piece?.offsetTop % consts.tileSizePx),
+                modLeft = RoundProper(GAME_STATE.mouse.piece?.offsetLeft % consts.tileSizePx)
+
+            if(modTop != 0 || modLeft != 0){
+                GAME_STATE.mouse.piece.style.top = `${GAME_STATE.mouse.piece?.offsetTop + modTop}px`;
+                GAME_STATE.mouse.piece.style.left = `${GAME_STATE.mouse.piece?.offsetLeft + modLeft}px`;
+            }
+
+            checkWin();
+        }
+        
+        function movePiece(e){
+            if(!GAME_STATE.mouse.pressed) return;
+
+            let width = GAME_STATE.mouse.piece.clientWidth,
+                height = GAME_STATE.mouse.piece.clientHeight,
+                top = GAME_STATE.mouse.piece.offsetTop,
+                left = GAME_STATE.mouse.piece.offsetLeft
+
+            if(width > height && e.movementX != 0) left += e.movementX
+            if(width < height && e.movementY != 0) top += e.movementY
+
+            if(!checkCollisions(width, height, top, left)){
+                GAME_STATE.mouse.piece.style.top = `${top}px`;
+                GAME_STATE.mouse.piece.style.left = `${left}px`;
+            }
+        }
+
+        function checkCollisions(width, height, top, left){
+            if(left < 0 ||
+                (left + width > ELEMENTS.BOARD.clientWidth && !GAME_STATE.mouse.piece.classList.contains('main')) ||
+                (left + width > ELEMENTS.BOARD.clientWidth + 4*consts.tileSizePx) ||
+                top < 0 || top + height > ELEMENTS.BOARD.clientHeight
+            ) return true;
+
+            let intersectPiece = GAME_STATE.PIECES.filter(i => {
+                let iWidth = i.piece.clientWidth,
+                    iHeight = i.piece.clientHeight,
+                    iTop = i.piece.offsetTop,
+                    iLeft = i.piece.offsetLeft;
+                return (i.piece != GAME_STATE.mouse.piece) && (
+                (top > iTop && top < iTop + iHeight && left > iLeft && left < iLeft + iWidth) ||
+                (top > iTop && top < iTop + iHeight && left + width > iLeft && left + width < iLeft + iWidth) ||
+                (top + height > iTop && top + height < iTop + iHeight && left > iLeft && left < iLeft + iWidth) ||
+                (top + height > iTop && top + height < iTop + iHeight && left + width > iLeft && left + width < iLeft + iWidth)
+            )})
+
+            return intersectPiece.length > 0;
+        }
+
+        function checkWin(){
+            let main = GAME_STATE.PIECES.find(i => i.type == 'main')?.piece
+            if(main?.offsetLeft + 2*consts.tileSizePx <= ELEMENTS.BOARD.clientWidth) return;
+
+            ELEMENTS.WIN.style.display = 'block';
+            GAME_STATE.active = false
+            setTimeout(() => {
+                ELEMENTS.WIN.style.display = 'none'
+                changeLevel(1)
+                GAME_STATE.active = true
+            },1000)
+        }
+
+        initBoard(ELEMENTS.BOARD);
+        document.addEventListener('keydown', handleKeyPress)
+        document.addEventListener('pointerup', mouseReleased)
+        document.addEventListener('pointermove', movePiece)
+        ELEMENTS.BOARD.addEventListener('pointerdown', mouseClick)
+    </script>
+</body>
+</html>
