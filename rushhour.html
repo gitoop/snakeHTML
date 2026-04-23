@@ -78,11 +78,6 @@
             right: 15%;
             width: 10%;
         }
-        .piece.hori::after {
-            left: 6px;
-            bottom: 6px;
-            box-shadow: calc(100% - 14px) 0 0 #111;
-        }
         .piece.vert {
             border-radius: 30px 30px 10px 10px;
         }
@@ -98,11 +93,6 @@
         .piece.vert.truck::before {
             top: 15%;
             height: 10%;
-        }
-        .piece.vert::after {
-            left: 6px;
-            top: 6px;
-            box-shadow: 0 calc(100% - 14px) 0 #111;
         }
         body{
             background-color:black;
@@ -147,6 +137,10 @@
         #levelSelect > b {
             padding: 0 15px ;
             cursor:pointer;
+        }
+        #level{
+            min-width: 20px;
+            direction: ltr;
         }
         .gameTile{
             width: 56px;
@@ -209,7 +203,7 @@
             <bold>LEVEL</bold>
             <div id="levelSelect">
                 <b onclick="changeLevel(-1)">&lt;</b>
-                <p id="level">1</p>
+                <p id="level" contenteditable="true">1</p>
                 <b onclick="changeLevel(1)">&gt;</b>
             </div>
         </div>
@@ -395,16 +389,26 @@
             startGame();
         }
 
+        function changeLevelManually(){
+            let num = parseInt(ELEMENTS.LEVEL.innerText)
+            if(!num || num > LEVELS.length){
+                ELEMENTS.LEVEL.blur();
+                ELEMENTS.LEVEL.innerText = Math.min((num || 1), LEVELS.length)
+            }
+            GAME_STATE.level = num - 1
+            startGame();
+        }
+
         function generatePiece(piece, type){
             return {
                 type: type.split('_')[0],
                 piece: generateElement('div', {
                     class: `piece ${piece.ori == orientation.horizontal ? 'hori' : 'vert'} ${type.split('_')[0]}`,
                     type: type,
-                    top: `${piece.row * consts.tileSizePx}px`,
-                    left: `${piece.col * consts.tileSizePx}px`,
-                    width: piece.ori == orientation.horizontal ?  `${piece.length * consts.tileSizePx}px` : `${consts.tileSizePx}px`,
-                    height: piece.ori == orientation.horizontal ?  `${consts.tileSizePx}px` : `${piece.length * consts.tileSizePx}px`,
+                    top: `${piece.row * consts.tileSizePx + 1}px`,
+                    left: `${piece.col * consts.tileSizePx + 1}px`,
+                    width: piece.ori == orientation.horizontal ?  `${(piece.length * consts.tileSizePx) - 2}px` : `${consts.tileSizePx - 2}px`,
+                    height: piece.ori == orientation.horizontal ?  `${consts.tileSizePx - 2}px` : `${(piece.length * consts.tileSizePx) - 2}px`,
                 })
             }
         }  
@@ -440,8 +444,8 @@
                 modLeft = RoundProper(GAME_STATE.mouse.piece?.offsetLeft % consts.tileSizePx)
 
             if(modTop != 0 || modLeft != 0){
-                GAME_STATE.mouse.piece.style.top = `${GAME_STATE.mouse.piece?.offsetTop + modTop}px`;
-                GAME_STATE.mouse.piece.style.left = `${GAME_STATE.mouse.piece?.offsetLeft + modLeft}px`;
+                GAME_STATE.mouse.piece.style.top = `${GAME_STATE.mouse.piece?.offsetTop + modTop + 1}px`;
+                GAME_STATE.mouse.piece.style.left = `${GAME_STATE.mouse.piece?.offsetLeft + modLeft + 1}px`;
             }
 
             checkWin();
@@ -477,10 +481,10 @@
                     iTop = i.piece.offsetTop,
                     iLeft = i.piece.offsetLeft;
                 return (i.piece != GAME_STATE.mouse.piece) && (
-                (top > iTop && top < iTop + iHeight && left > iLeft && left < iLeft + iWidth) ||
-                (top > iTop && top < iTop + iHeight && left + width > iLeft && left + width < iLeft + iWidth) ||
-                (top + height > iTop && top + height < iTop + iHeight && left > iLeft && left < iLeft + iWidth) ||
-                (top + height > iTop && top + height < iTop + iHeight && left + width > iLeft && left + width < iLeft + iWidth)
+                (top > iTop && top < iTop + iHeight && left + (width/2) > iLeft && left + (width/2) < iLeft + iWidth) ||
+                (top + (height/2) > iTop && top + (height/2) < iTop + iHeight && left + width > iLeft && left + width < iLeft + iWidth) ||
+                (top + height > iTop && top + height < iTop + iHeight && left + (width/2) > iLeft && left + (width/2) < iLeft + iWidth) ||
+                (top + (height/2) > iTop && top + (height/2) < iTop + iHeight && left + width > iLeft && left + width < iLeft + iWidth)
             )})
 
             return intersectPiece.length > 0;
@@ -504,6 +508,7 @@
         document.addEventListener('pointerup', mouseReleased)
         document.addEventListener('pointermove', movePiece)
         ELEMENTS.BOARD.addEventListener('pointerdown', mouseClick)
+        ELEMENTS.LEVEL.addEventListener('input', changeLevelManually)
     </script>
 </body>
 </html>
