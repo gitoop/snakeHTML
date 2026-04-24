@@ -108,6 +108,7 @@
             margin-top:50px;
             width:100%;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;            
         }
@@ -128,17 +129,18 @@
             top: calc(100% / 3);
             background-color: var(--background);
         }
-        #levelSelect{
+        .levelSelect{
             display: flex;
+            flex-direction: row;
             justify-content: center;
             align-items: center;
             margin-top: 5px;
         }
-        #levelSelect > b {
+        .levelSelect > b {
             padding: 0 15px ;
             cursor:pointer;
         }
-        #level{
+        .level{
             min-width: 20px;
             direction: ltr;
         }
@@ -178,6 +180,15 @@
             color: green;
             display: none;
         }
+        @media (max-width: 480px) {
+            .banner { display: none; }
+            #exitLip { height: calc(36px + 2*6px) !important; }
+            .gameTile{ width: 36px !important; height: 36px !important; }
+            .piece { touch-action: none; }
+        }
+        @media (min-width: 480px) {
+            .mobile { display: none !important; }
+        }
     </style>
     <div style="display: flex; flex-direction: row;" >
         <div id="leftBanner" class="banner">
@@ -201,13 +212,18 @@
             <p>have fun</p>
             <br/>
             <bold>LEVEL</bold>
-            <div id="levelSelect">
+            <div class="levelSelect">
                 <b onclick="changeLevel(-1)">&lt;</b>
-                <p id="level" contenteditable="true">1</p>
+                <p class="level" contenteditable="true">1</p>
                 <b onclick="changeLevel(1)">&gt;</b>
             </div>
         </div>
         <div id="gameContainer" style="position: relative;">
+            <div class="mobile levelSelect">
+                <b onclick="changeLevel(-1)">&lt;</b>
+                <p class="level" contenteditable="true">1</p>
+                <b onclick="changeLevel(1)">&gt;</b>
+            </div>
             <div id="boardContainer">
                 <div id="win" class="gameMessage">CONGRATS</div>
                 <div id="gameBoard"></div>
@@ -215,9 +231,10 @@
         </div>
     </div>
     <script>
+        const isMobile = window.matchMedia("(max-width: 480px)").matches;
         const GRID_SIZE = { height: 6, width: 6 };
         const consts = {
-            tileSizePx: 68 
+            tileSizePx: isMobile ? 48 : 68 
         }
         const keys = {
             RIGHT:"ArrowRight",
@@ -233,7 +250,7 @@
         }
         const ELEMENTS = {
             BOARD: document.querySelector(`#gameBoard`),
-            LEVEL: document.querySelector('#level'),
+            LEVEL: document.querySelector(isMobile ? '.mobile .level' : '.level'),
             WIN: document.querySelector('#win'),
         }
         const LEVELS = [
@@ -324,7 +341,9 @@
             level: 0,
             mouse:{
                 pressed:0,
-                piece: null
+                piece: null,
+                lastX: 0,
+                lastY: 0
             }
         }
 
@@ -332,7 +351,7 @@
             let el = document.createElement(tag)
             el.className = args.class ?? ''
             el.id = args.id ?? ''
-            el.setAttribute('type', args.type)
+            args.type && el.setAttribute('type', args.type)
             el.style.height = args.height ?? ''
             el.style.width = args.width ?? ''
             el.style.top = args.top ?? ''
@@ -424,6 +443,8 @@
             if(!e.target.classList.contains('piece') || !GAME_STATE.active) return;
 
             GAME_STATE.mouse.pressed = true;
+            GAME_STATE.mouse.lastX = e.clientX;
+            GAME_STATE.mouse.lastY = e.clientY;
             GAME_STATE.mouse.piece = e.target;
             e.target.setPointerCapture?.(e.pointerId);
             document.body.style.cursor = 'grabbing'
@@ -457,10 +478,16 @@
             let width = GAME_STATE.mouse.piece.clientWidth,
                 height = GAME_STATE.mouse.piece.clientHeight,
                 top = GAME_STATE.mouse.piece.offsetTop,
-                left = GAME_STATE.mouse.piece.offsetLeft
+                left = GAME_STATE.mouse.piece.offsetLeft,
+                maxDelta =  0.9 * consts.tileSizePx,
+                deltaX = Math.max(-maxDelta, Math.min(e.clientX - GAME_STATE.mouse.lastX, maxDelta)),
+                deltaY = Math.max(-maxDelta, Math.min(e.clientY - GAME_STATE.mouse.lastY, maxDelta));
 
-            if(width > height && e.movementX != 0) left += e.movementX
-            if(width < height && e.movementY != 0) top += e.movementY
+            GAME_STATE.mouse.lastX = e.clientX
+            GAME_STATE.mouse.lastY = e.clientY
+
+            if(width > height && deltaX != 0) left += deltaX
+            if(width < height && deltaY != 0) top += deltaY
 
             if(!checkCollisions(width, height, top, left)){
                 GAME_STATE.mouse.piece.style.top = `${top}px`;
@@ -477,14 +504,16 @@
 
             let intersectPiece = GAME_STATE.PIECES.filter(i => {
                 let iWidth = i.piece.clientWidth,
-                    iHeight = i.piece.clientHeight,
-                    iTop = i.piece.offsetTop,
-                    iLeft = i.piece.offsetLeft;
-                return (i.piece != GAME_STATE.mouse.piece) && (
-                (top > iTop && top < iTop + iHeight && left + (width/2) > iLeft && left + (width/2) < iLeft + iWidth) ||
-                (top + (height/2) > iTop && top + (height/2) < iTop + iHeight && left + width > iLeft && left + width < iLeft + iWidth) ||
-                (top + height > iTop && top + height < iTop + iHeight && left + (width/2) > iLeft && left + (width/2) < iLeft + iWidth) ||
-                (top + (height/2) > iTop && top + (height/2) < iTop + iHeight && left + width > iLeft && left + width < iLeft + iWidth)
+                iHeight = i.piece.clientHeight,
+                iTop = i.piece.offsetTop,
+                iLeft = i.piece.offsetLeft;
+
+                return (i.piece != GAME_STATE.mouse.piece && !(
+                        left + width <= iLeft ||
+                        left >= iLeft + iWidth ||
+                        top + height <= iTop ||
+                        top >= iTop + iHeight
+                    )
             )})
 
             return intersectPiece.length > 0;
@@ -509,6 +538,7 @@
         document.addEventListener('pointermove', movePiece)
         ELEMENTS.BOARD.addEventListener('pointerdown', mouseClick)
         ELEMENTS.LEVEL.addEventListener('input', changeLevelManually)
+        isMobile && startGame();
     </script>
 </body>
 </html>
